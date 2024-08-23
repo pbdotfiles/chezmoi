@@ -1,0 +1,7 @@
+[credential]
+	helper = store
+[user]
+	email = pb.pubpub@gmail.com
+	name = pb4git
+[core]
+	autocrlf = input
