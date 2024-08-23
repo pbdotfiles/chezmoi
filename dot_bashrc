@@ -129,6 +129,5 @@ shopt -s histappend               # append to history, don't overwrite it
 # Save and reload the history after each command finishes
 PROMPT_COMMAND="history -a; history -c; history -r; $PROMPT_COMMAND"
 
-alias lconda="~/miniforge3/condabin/conda init"
 alias lgittree="git log --all --graph --decorate --oneline"
 
