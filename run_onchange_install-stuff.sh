@@ -64,9 +64,9 @@ chmod u+x ./Miniforge3.sh
 rm Miniforge3.sh
 
 # DISCORD LATEST
-wget -q -O discord.deb https://discord.com/api/download?platform=linux&format=deb
-sudo dpkg -i discord.deb
-rm discord.deb
+#wget -q -O discord.deb https://discord.com/api/download?platform=linux&format=deb
+#sudo dpkg -i discord.deb
+#rm discord.deb
 
 # WINE STAGING, MINT 22
 sudo dpkg --add-architecture i386 
