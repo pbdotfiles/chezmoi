@@ -1,5 +1,5 @@
 #!/bin/bash
-sudo apt install ripgrep cifs-utils samba remmina filelight syncthing micro gnome-tweaks borgbackup lm-sensors exiftool qbittorrent syncthing neovim htop stress s-tui nload flameshot
+sudo apt install ripgrep cifs-utils samba remmina filelight syncthing micro gnome-tweaks borgbackup lm-sensors exiftool qbittorrent syncthing neovim htop stress s-tui nload flameshot nvtop liblzo2-dev
 
 ############################
 # OBSIDIAN LATEST
