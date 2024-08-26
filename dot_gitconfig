@@ -9,3 +9,6 @@
 	# https://github.com/hilbix/gitstart/blob/master/aliases.sh
 	#hop from https://stackoverflow.com/questions/1282639/switch-git-branch-without-files-checkout
 	hop = "!f() { git rev-parse --verify \"$*\" && git checkout \"HEAD^{}\" && git reset --soft \"$*\" && git checkout \"$*\"; }; f"
+	unstage = reset HEAD --
+	delete-merged = !"git branch --merged | grep -vE 'main|master|dev|\\*' | xargs -n 1 git branch -D"
+	loggraph = !"git log --all --graph --decorate --oneline"
