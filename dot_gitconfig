@@ -5,3 +5,7 @@
 	name = pb4git
 [core]
 	autocrlf = input
+[alias]
+	# https://github.com/hilbix/gitstart/blob/master/aliases.sh
+	#hop from https://stackoverflow.com/questions/1282639/switch-git-branch-without-files-checkout
+	hop = "!f() { git rev-parse --verify \"$*\" && git checkout \"HEAD^{}\" && git reset --soft \"$*\" && git checkout \"$*\"; }; f"
