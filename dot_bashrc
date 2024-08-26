@@ -122,7 +122,8 @@ fi
 # BELOW : ADDED BY PAUL
 ##################################
 
-HISTSIZE=100000                   # big big history
+export PATH="~/bin/:$PATH"
+HISTSIZ=100000                   # big big history
 HISTFILESIZE=100000               # big big history
 shopt -s histappend               # append to history, don't overwrite it
 
