@@ -1,3 +1,4 @@
+.gitignore
 README.md
 keybindings.dconf
 keyboard.dconf

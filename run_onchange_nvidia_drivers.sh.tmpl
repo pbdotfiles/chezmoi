@@ -1,0 +1,12 @@
+#!/bin/bash
+
+{{- if eq .chezmoi.hostname "fractal22" }}
+
+# this will only be included in ~/.bashrc on work-laptop
+# PPA: https://launchpad.net/~graphics-drivers/+archive/ubuntu/ppa
+sudo add-apt-repository ppa:graphics-drivers/ppa
+sudo apt update
+sudo apt install nvidia-driver-555
+sudo apt install nvtop
+
+{{- end }}
