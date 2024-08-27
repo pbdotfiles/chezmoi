@@ -1,0 +1,11 @@
+[/]
+custom-list=['custom0', '__dummy__']
+
+[custom-keybindings/custom0]
+binding=['Print']
+command='flameshot gui --clipboard --path /home/paul/Pictures'
+name='Flameshot'
+
+[media-keys]
+area-screenshot=@as []
+screenshot=@as []

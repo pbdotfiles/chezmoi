@@ -10,3 +10,10 @@ System setup and dotfiles using [`chezmoi`](https://www.chezmoi.io/)
 
 ## Other dotfiles available on github
 https://github.com/renemarc/dotfiles/tree/master
+
+## dconf checklist:
+`dconf dump /org/cinnamon/desktop/keybindings/ > keybindings.dconf`
+`dconf dump /org/cinnamon/desktop/peripherals/keyboard/ > keyboard.dconf`
+
+`dconf load /org/cinnamon/desktop/keybindings/ < keybindings.dconf`
+`dconf load /org/cinnamon/desktop/peripherals/keyboard/ < keyboard.dconf`

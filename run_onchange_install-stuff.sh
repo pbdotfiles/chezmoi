@@ -13,7 +13,8 @@ ssh-keygen -t rsa
 ssh-copy-id -i /home/paul/.ssh/id_rsa paul@192.168.1.222
 
 # DCONF for GNOME-TWEAK-TOOLS
-dconf load / < my-cinnamon.dconf
+dconf load /org/cinnamon/desktop/keybindings/ < keybindings.dconf
+dconf load /org/cinnamon/desktop/peripherals/keyboard/ < keyboard.dconf
 
 #############################
 # MOUNT POINTS
