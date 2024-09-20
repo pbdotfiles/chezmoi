@@ -1,5 +1,9 @@
 #!/bin/bash
-sudo apt install ripgrep cifs-utils samba remmina filelight syncthing micro gnome-tweaks borgbackup lm-sensors exiftool qbittorrent syncthing neovim htop stress s-tui nload flameshot liblzo2-dev git winetricks tmux openssh-server
+sudo apt install ripgrep cifs-utils samba syncthing micro borgbackup lm-sensors exiftool syncthing neovim htop stress s-tui nload liblzo2-dev git tmux openssh-server tree glances
+
+{{- if eq .chezmoi.osRelease.id "linuxmint" }}
+
+sudo apt install remmina filelight gnome-tweaks qbittorrent flameshot winetricks 
 
 ############################
 # OBSIDIAN LATEST
@@ -40,6 +44,8 @@ wget -q -O pycharm.tar.gz https://download.jetbrains.com/python/pycharm-communit
 tar -xzf pycharm.tar.gz -C ~/.local/share/applications
 ~/.local/share/applications/pycharm-community-2024.2/bin/pycharm
 rm pycharm.tar.gz
+
+{{- end}}
 
 ##############################
 # Update everything

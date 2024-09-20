@@ -2,3 +2,15 @@
 README.md
 keybindings.dconf
 keyboard.dconf
+.idea
+
+{{- if neq .chezmoi.osRelease.id "linuxmint" }}
+.ideavimrc
+.config/autostart
+.config/flameshot
+.local/share/applications
+{{- end }}
+
+{{- if neq .chezmoi.hostname "fractal22" }}
+run_onchange_nvidia_drivers.sh
+
