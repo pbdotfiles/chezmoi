@@ -4,13 +4,26 @@ keybindings.dconf
 keyboard.dconf
 .idea
 
-{{- if neq .chezmoi.osRelease.id "linuxmint" }}
+{{- if eq .chezmoi.osRelease.id "ubuntu" }}
+# Ubuntu Server will not require these:
 .ideavimrc
 .config/autostart
 .config/flameshot
 .local/share/applications
+{{- else }}
+*server_setup*
 {{- end }}
 
-{{- if neq .chezmoi.hostname "fractal22" }}
-run_onchange_nvidia_drivers.sh
+
+{{- if not (eq .chezmoi.hostname "fractal22") }}
+*nvidia_drivers*
+*fractal_local_storage*
+{{- end}}
+
+{{- if not (eq .chezmoi.hostname "rone") }}
+*rone_local_storage*
+{{- else }}
+*rone_ssh*
+{{- end }}
+
 

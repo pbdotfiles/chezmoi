@@ -27,5 +27,4 @@ sudo umount -a
 sudo mount -a
 
 # Configure SSH access to minis
-ssh-keygen -t rsa
 ssh-copy-id -i /home/paul/.ssh/id_rsa paul@192.168.1.222

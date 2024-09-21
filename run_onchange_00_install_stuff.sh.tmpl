@@ -1,9 +1,15 @@
 #!/bin/bash
-sudo apt install ripgrep cifs-utils samba syncthing micro borgbackup lm-sensors exiftool syncthing neovim htop stress s-tui nload liblzo2-dev git tmux openssh-server tree glances
+sudo apt install ripgrep cifs-utils samba borgbackup lm-sensors exiftool syncthing neovim htop stress s-tui nload liblzo2-dev git tmux openssh-server tree
+
+ssh-keygen -t rsa
+
+{{- if eq .chezmoi.osRelease.id "ubuntu" }}
+sudo apt install cockpit unattended-upgrades update-notifier-common
+{{- end}}
 
 {{- if eq .chezmoi.osRelease.id "linuxmint" }}
 
-sudo apt install remmina filelight gnome-tweaks qbittorrent flameshot winetricks 
+sudo apt install remmina filelight gnome-tweaks qbittorrent flameshot winetricks glances
 
 ############################
 # OBSIDIAN LATEST
@@ -46,6 +52,8 @@ tar -xzf pycharm.tar.gz -C ~/.local/share/applications
 rm pycharm.tar.gz
 
 {{- end}}
+
+
 
 ##############################
 # Update everything

@@ -4,7 +4,6 @@
 
 if [ ! -d /mnt/ext4_data ]; then
 	sudo mkdir /mnt/ext4_data
-	sudo chattr +i /mnt/ext4_data
 fi
 
 # FSTAB
@@ -21,6 +20,7 @@ EOF
 sudo umount -a
 sudo mount -a
 sudo chown -R paul /mnt/ext4_data
+sudo chattr +i /mnt/ext4_data
 
 rmdir ~/Downloads ~/Documents ~/Pictures
 ln -s /mnt/ext4_data/Downloads ~/Downloads
