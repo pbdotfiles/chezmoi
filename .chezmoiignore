@@ -3,6 +3,9 @@ README.md
 keybindings.dconf
 keyboard.dconf
 .idea
+.git
+
+*install_fonts*
 
 {{- if eq .chezmoi.osRelease.id "ubuntu" }}
 # Ubuntu Server will not require these:
@@ -10,20 +13,21 @@ keyboard.dconf
 .config/autostart
 .config/flameshot
 .local/share/applications
-{{- else }}
-*server_setup*
+.condarc
+*mint_setup*
 {{- end }}
 
+{{- if not (eq .chezmoi.hostname "rone") }}
+*rone_local_storage*
+*wireguard*
+{{- end }}
+
+{{- if not (eq .chezmoi.hostname "minis") }}
+*minis_local_storage*
+{{- end }}
 
 {{- if not (eq .chezmoi.hostname "fractal22") }}
 *nvidia_drivers*
 *fractal_local_storage*
-{{- end}}
-
-{{- if not (eq .chezmoi.hostname "rone") }}
-*rone_local_storage*
-{{- else }}
-*rone_ssh*
 {{- end }}
-
 

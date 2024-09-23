@@ -1,13 +1,4 @@
 #!/bin/bash
-sudo apt install ripgrep cifs-utils samba borgbackup lm-sensors exiftool syncthing neovim htop stress s-tui nload liblzo2-dev git tmux openssh-server tree
-
-ssh-keygen -t rsa
-
-{{- if eq .chezmoi.osRelease.id "ubuntu" }}
-sudo apt install cockpit unattended-upgrades update-notifier-common
-{{- end}}
-
-{{- if eq .chezmoi.osRelease.id "linuxmint" }}
 
 sudo apt install remmina filelight gnome-tweaks qbittorrent flameshot winetricks glances
 
@@ -51,11 +42,3 @@ tar -xzf pycharm.tar.gz -C ~/.local/share/applications
 ~/.local/share/applications/pycharm-community-2024.2/bin/pycharm
 rm pycharm.tar.gz
 
-{{- end}}
-
-
-
-##############################
-# Update everything
-sudo apt update
-sudo apt upgrade

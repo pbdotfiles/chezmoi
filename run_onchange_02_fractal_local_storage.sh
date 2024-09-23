@@ -1,10 +1,16 @@
 #!/bin/bash
 
+
 {{- if eq .chezmoi.hostname "fractal22" }}
+
+sudo umount -a
 
 if [ ! -d /mnt/ext4_data ]; then
 	sudo mkdir /mnt/ext4_data
 fi
+sudo chattr -i /mnt/ext4_data
+sudo chown -R paul /mnt/ext4_data
+sudo chattr +i /mnt/ext4_data
 
 # FSTAB
 temp_file="/tmp/fstab_temp"
@@ -17,10 +23,7 @@ sudo tee -a /etc/fstab >/dev/null <<EOF
 UUID="bca615bc-2c63-4db8-8408-ddd48b27ab55" /mnt/ext4_data ext4 defaults 0 2
 EOF
 
-sudo umount -a
 sudo mount -a
-sudo chown -R paul /mnt/ext4_data
-sudo chattr +i /mnt/ext4_data
 
 rmdir ~/Downloads ~/Documents ~/Pictures
 ln -s /mnt/ext4_data/Downloads ~/Downloads
