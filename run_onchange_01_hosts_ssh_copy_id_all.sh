@@ -28,7 +28,7 @@ if [[ "$response" =~ ^[Yy][Ee][Ss]$ ]]; then
 		hostname=$(echo "$entry" | awk '{print $2}')
 
 		echo "Copying SSH key to $hostname ($ip)"
-		ssh-copy-id -i ~/.ssh/id_rsa.pub -o StrictHostKeyChecking=no "$hostname"
+		ssh-copy-id -i ~/.ssh/id_rsa.pub -o StrictHostKeyChecking=no -o ConnectTimeout=2 "$hostname"
 	done
 	echo "SSH keys copied successfully"
 else
