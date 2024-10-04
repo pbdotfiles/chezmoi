@@ -12,3 +12,5 @@
 	unstage = reset HEAD --
 	delete-merged = !"git branch --merged | grep -vE 'main|master|dev|\\*' | xargs -n 1 git branch -D"
 	loggraph = !"git log --all --graph --decorate --oneline"
+[init]
+	defaultBranch = main
