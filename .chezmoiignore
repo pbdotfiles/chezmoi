@@ -17,6 +17,11 @@ keyboard.dconf
 *mint_setup*
 {{- end }}
 
+{{- if eq .chezmoi.osRelease.id "linuxmint" }}
+# Linux mint will not require these:
+*server_setup*
+{{- end }}
+
 {{- if not (eq .chezmoi.hostname "rone") }}
 *rone_local_storage*
 *wireguard*
