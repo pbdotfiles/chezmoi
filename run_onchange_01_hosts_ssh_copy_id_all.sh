@@ -6,7 +6,7 @@ echo "=========================== SSH_COPY_ID_ALL =============="
 
 # Define the hosts to be added
 hosts=(
-  "192.168.1.201 fractal22"
+  "192.168.1.201 fractal"
   "192.168.1.202 morefine"
   "192.168.27.72 rone"
   "192.168.1.223 ronenu"

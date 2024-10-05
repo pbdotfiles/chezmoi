@@ -31,7 +31,7 @@ keyboard.dconf
 *minis_local_storage*
 {{- end }}
 
-{{- if not (eq .chezmoi.hostname "fractal22") }}
+{{- if not (eq .chezmoi.hostname "fractal") }}
 *nvidia_drivers*
 *fractal_local_storage*
 {{- end }}
