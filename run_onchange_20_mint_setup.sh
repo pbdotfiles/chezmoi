@@ -1,6 +1,6 @@
 #!/bin/bash
 
-sudo apt install remmina filelight gnome-tweaks qbittorrent flameshot winetricks glances
+sudo apt install remmina filelight gnome-tweaks qbittorrent flameshot winetricks glances -y
 
 ############################
 # OBSIDIAN LATEST
@@ -11,8 +11,8 @@ rm obsidian.deb
 
 #############################
 # DCONF for GNOME-TWEAK-TOOLS
-dconf load /org/cinnamon/desktop/keybindings/ < keybindings.dconf
-dconf load /org/cinnamon/desktop/peripherals/keyboard/ < keyboard.dconf
+dconf load /org/cinnamon/desktop/keybindings/ < ~/.local/share/chezmoi/keybindings.dconf
+dconf load /org/cinnamon/desktop/peripherals/keyboard/ < ~/.local/share/chezmoi/keyboard.dconf
 
 #############################
 # MINIFORGE LATEST
