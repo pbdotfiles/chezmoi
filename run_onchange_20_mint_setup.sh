@@ -1,6 +1,6 @@
 #!/bin/bash
 
-sudo apt install remmina filelight gnome-tweaks qbittorrent flameshot winetricks glances -y
+sudo apt install remmina filelight gnome-tweaks qbittorrent flameshot glances -y
 
 ############################
 # OBSIDIAN LATEST
@@ -34,6 +34,7 @@ sudo wget -O /etc/apt/keyrings/winehq-archive.key https://dl.winehq.org/wine-bui
 sudo wget -NP /etc/apt/sources.list.d/ https://dl.winehq.org/wine-builds/ubuntu/dists/noble/winehq-noble.sources
 sudo apt update
 sudo apt install --yes --install-recommends winehq-staging
+sudo apt install winetricks -y
 
 ##############################
 # PYCHARM 2024.2
