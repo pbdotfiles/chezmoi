@@ -11,8 +11,8 @@ rm obsidian.deb
 
 #############################
 # DCONF for GNOME-TWEAK-TOOLS
-# dconf load /org/cinnamon/desktop/keybindings/ < ~/.local/share/chezmoi/keybindings.dconf
-# dconf load /org/cinnamon/desktop/peripherals/keyboard/ < ~/.local/share/chezmoi/keyboard.dconf
+dconf load /org/cinnamon/desktop/keybindings/ < ~/.local/share/chezmoi/keybindings.dconf
+dconf load /org/cinnamon/desktop/peripherals/keyboard/ < ~/.local/share/chezmoi/keyboard.dconf
 
 #############################
 # MINIFORGE LATEST
