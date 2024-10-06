@@ -43,3 +43,9 @@ tar -xzf pycharm.tar.gz -C ~/.local/share/applications
 ~/.local/share/applications/pycharm-community-2024.2/bin/pycharm
 rm pycharm.tar.gz
 
+##############################
+# Weird cinnamon install fix ?
+
+sudo apt update
+sudo apt upgrade -y
+sudo apt install nemo cinnamon -y
