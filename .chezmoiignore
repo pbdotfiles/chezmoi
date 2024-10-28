@@ -4,6 +4,7 @@ keybindings.dconf
 keyboard.dconf
 .idea
 .git
+bitwarden.sh
 
 *install_fonts*
 

@@ -5,8 +5,9 @@ System setup and dotfiles using [`chezmoi`](https://www.chezmoi.io/)
 ## Quick start
 
 1. Install chezmoi: `sh -c "$(curl -fsLS get.chezmoi.io)"` in `~`
-2. Run `~/bin/chezmoi init https://github.com/pb4git/chezmoi.git`
-3. Run `~/bin/chezmoi apply`
+2. Clone the chezmoi repository: `~/bin/chezmoi init https://github.com/pbdotfiles/chezmoi.git`
+3. Configure Bitwarden: `bash ~/.local/share/chezmoi/bitwarden.sh`
+4. Run `~/bin/chezmoi apply`
 
 ## Manual installation steps
 Wireguard configuration:
