@@ -1,9 +1,9 @@
 [Desktop Entry]
 Type=Application
-Exec=xset r rate 220 50
+Exec=while true; do xset r rate 220 50; sleep 10; done
 X-GNOME-Autostart-enabled=true
 NoDisplay=false
 Hidden=false
 Name[en_US]=xset
-Comment[en_US]=No description
+Comment[en_US]=Regularly apply xset keyboard configuration.
 X-GNOME-Autostart-Delay=5
