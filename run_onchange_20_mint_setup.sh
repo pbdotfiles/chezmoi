@@ -52,6 +52,14 @@ tar -xzf pycharm.tar.gz -C ~/.local/share/applications
 ~/.local/share/applications/pycharm-community-2024.2/bin/pycharm
 rm pycharm.tar.gz
 
+
+##############################
+# Brave
+sudo curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main"|sudo tee /etc/apt/sources.list.d/brave-browser-release.list
+sudo apt update
+sudo apt install brave-browser
+
 ##############################
 # Weird cinnamon install fix ?
 
