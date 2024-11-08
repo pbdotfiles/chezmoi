@@ -6,29 +6,26 @@ echo "=========================== SSH_COPY_ID_ALL =============="
 
 # Define the hosts to be added
 hosts=(
-  "192.168.1.201 fractal"
-  "192.168.1.202 morefine"
-  "192.168.27.72 rone"
-  "192.168.1.223 ronenu"
-  "192.168.1.222 minis"
+  "fractal"
+  "morefine"
+  "rone"
+  "ronenu"
+  "minis"
+  "ser"
 )
-
-for host in "${hosts[@]}"; do
-	if ! grep -q "^${host}\$" /etc/hosts; then
-		echo "$host" | sudo tee -a /etc/hosts >/dev/null
-	fi
-done
-echo "Filled hosts file successfully"
 
 # Ask the user if they want to perform ssh-copy-id on all hosts
 read -p "Do you want to perform ssh-copy-id on all hosts? (yes/no): " response
 if [[ "$response" =~ ^[Yy][Ee][Ss]$ ]]; then
 	for entry in "${hosts[@]}"; do
-		ip=$(echo "$entry" | awk '{print $1a'})
-		hostname=$(echo "$entry" | awk '{print $2}')
-
-		echo "Copying SSH key to $hostname ($ip)"
-		ssh-copy-id -i ~/.ssh/id_rsa.pub -o StrictHostKeyChecking=no -o ConnectTimeout=2 "$hostname"
+		hostname=$(echo "$entry" | awk '{print $1}')
+		# Skip if the hostname is the same as the current machine
+		if [ "$hostname" = $(hostname) ]; then
+			echo "Skipping $hostname (current machine)"
+		else	
+			echo "Copying SSH key to $hostname"
+			ssh-copy-id -i ~/.ssh/id_rsa.pub -o StrictHostKeyChecking=no -o ConnectTimeout=2 "$hostname"
+		fi
 	done
 	echo "SSH keys copied successfully"
 else
