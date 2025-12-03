@@ -26,10 +26,7 @@ sudo mv "$temp_file" /etc/fstab
 # Append this at the end of /etc/fstab :
 # use "fdisk -l" and "blkid" to get the UUID
 sudo tee -a /etc/fstab >/dev/null <<EOF
-//minis/share /mnt/minis_share cifs credentials=/root/.smbcredentials,uid=1000,gid=1000,dir_mode=0755,file_mode=0755,iocharset=utf8,noauto,x-systemd.automount,x-systemd.idle-timeout=600,_netdev,soft,timeo=300,retrans=2 0 0
-# timeo : timeout in deciseconds
-# restrans : retry n times before closing the connection
-# soft : if the connection fails, system says I/O error instead of hanging indefinitely
+//minis/share /mnt/minis_share cifs credentials=/root/.smbcredentials,uid=1000,gid=1000,dir_mode=0755,file_mode=0755,iocharset=utf8,noauto,x-systemd.automount,_netdev 0 0
 EOF
 
 sudo mount -a
