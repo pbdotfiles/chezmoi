@@ -1,0 +1,24 @@
+#!/bin/bash
+
+{{ include ".chezmoitemplates/filesystem_utils" }}
+# MOUNT POINTS
+
+sudo umount -a
+
+prepare_mount_point "/mnt/minis_share" "paul"
+
+# CREDENTIALS
+read -s -p "Enter password for minis SAMBA share: " password
+sudo tee /root/.smbcredentials >/dev/null <<EOF
+username=paul
+password=$password
+EOF
+
+# FSTAB
+SHARE_ID="//minis/share"
+ENTRY="$SHARE_ID /mnt/minis_share cifs credentials=/root/.smbcredentials,uid=1000,gid=1000,dir_mode=0755,file_mode=0755,iocharset=utf8,noauto,x-systemd.automount,_netdev 0 0"
+update_fstab "$SHARE_ID" "$ENTRY"
+
+# Re-mount everything
+sudo mount -a
+
