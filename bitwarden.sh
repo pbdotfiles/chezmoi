@@ -1,6 +1,6 @@
-#!bin/bash
+#!/bin/bash
 # Setup bitwarden on this computer
-curl -L "https://vault.bitwarden.com/download/?app=cli&platform=linux" > bw.zip
+curl -L "https://vault.bitwarden.com/download/?app=cli&platform=linux" >bw.zip
 unzip bw.zip
 chmod +x bw
 mv bw ~/bin/
