@@ -1,28 +1,24 @@
 #!/bin/bash
-############################
-# FONTS
+#################################################
+# Download latest version of the FiraCode fonts
+#################################################
+
 fonts_dir="${HOME}/.local/share/fonts"
 if [ ! -d "${fonts_dir}" ]; then
-    echo "mkdir -p $fonts_dir"
-    mkdir -p "${fonts_dir}"
-else
-    echo "Found fonts dir $fonts_dir"
+  mkdir -p "${fonts_dir}"
 fi
 
-# FIRA CODE
-version=5.2
-zip=Fira_Code_v${version}.zip
-curl --fail --location --show-error https://github.com/tonsky/FiraCode/releases/download/${version}/${zip} --output ${zip}
-unzip -o -q -d ${fonts_dir} ${zip}
-rm ${zip}
+URL=$(wget -q -O - https://api.github.com/repos/ryanoasis/nerd-fonts/releases/latest | grep 'browser_download_url.*FiraCode.zip' | awk -F'"' '{print $4}')
 
-# NERD FONTS
-wget -q -O - https://api.github.com/repos/ryanoasis/nerd-fonts/releases/latest | grep 'zip"$' | awk -F'"' ' {print $4} ' | while read -r url; do
-	echo "downloading: $url"
-        wget -q -O font.zip "$url"
-        unzip -o -q -d ${fonts_dir} font.zip
-        rm font.zip
-done
+if [ -z "$URL" ]; then
+  echo "Error: Could not find FiraCode.zip in the latest Nerd Fonts release."
+  exit 1
+fi
 
-# install the fonts
+echo "Downloading latest FiraCode version from: $URL"
+wget -q -O font.zip "$URL"
+unzip -o -q -d "${fonts_dir}" font.zip
+rm font.zip
+
+# Install the font
 fc-cache -f
