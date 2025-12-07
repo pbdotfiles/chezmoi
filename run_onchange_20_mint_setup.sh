@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 sudo apt install remmina filelight gnome-tweaks qbittorrent flameshot glances -y
 
 ############################
@@ -11,8 +13,8 @@ rm obsidian.deb
 
 #############################
 # DCONF for GNOME-TWEAK-TOOLS
-dconf load /org/cinnamon/desktop/keybindings/ < ~/.local/share/chezmoi/keybindings.dconf
-dconf load /org/cinnamon/desktop/peripherals/keyboard/ < ~/.local/share/chezmoi/keyboard.dconf
+dconf load /org/cinnamon/desktop/keybindings/ <~/.local/share/chezmoi/keybindings.dconf
+dconf load /org/cinnamon/desktop/peripherals/keyboard/ <~/.local/share/chezmoi/keyboard.dconf
 
 #############################
 # MINIFORGE LATEST
@@ -28,7 +30,7 @@ rm Miniforge3.sh
 #rm discord.deb
 
 # WINE STAGING, MINT 22
-sudo dpkg --add-architecture i386 
+sudo dpkg --add-architecture i386
 sudo mkdir -pm755 /etc/apt/keyrings
 sudo wget -O /etc/apt/keyrings/winehq-archive.key https://dl.winehq.org/wine-builds/winehq.key
 sudo wget -NP /etc/apt/sources.list.d/ https://dl.winehq.org/wine-builds/ubuntu/dists/noble/winehq-noble.sources
@@ -52,11 +54,10 @@ tar -xzf pycharm.tar.gz -C ~/.local/share/applications
 ~/.local/share/applications/pycharm-community-2024.2/bin/pycharm
 rm pycharm.tar.gz
 
-
 ##############################
 # Brave
 sudo curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg
-echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main"|sudo tee /etc/apt/sources.list.d/brave-browser-release.list
+echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main" | sudo tee /etc/apt/sources.list.d/brave-browser-release.list
 sudo apt update
 sudo apt install brave-browser
 

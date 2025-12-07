@@ -1,4 +1,7 @@
 #!/bin/bash
+
+set -euo pipefail
+
 #################################################
 # Download latest version of the FiraCode fonts
 #################################################

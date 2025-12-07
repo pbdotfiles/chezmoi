@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 # PPA: https://launchpad.net/~graphics-drivers/+archive/ubuntu/ppa
 sudo add-apt-repository ppa:graphics-drivers/ppa
 sudo apt update

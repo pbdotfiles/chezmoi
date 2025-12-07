@@ -1,4 +1,7 @@
 #!/bin/bash
+
+set -euo pipefail
+
 sudo apt install unattended-upgrades update-notifier-common ufw cockpit -y
 
 sudo perl -pi -e 's/^.*Unattended-Upgrade::Automatic-Reboot .*$/Unattended-Upgrade::Automatic-Reboot "true";/' /etc/apt/apt.conf.d/50unattended-upgrades
