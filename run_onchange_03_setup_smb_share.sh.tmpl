@@ -5,7 +5,7 @@ set -euo pipefail
 {{ include ".chezmoitemplates/filesystem_utils" }}
 # MOUNT POINTS
 
-sudo umount -a
+sudo umount -a || true
 
 prepare_mount_point "/mnt/minis_share" "paul"
 

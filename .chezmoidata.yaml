@@ -1,3 +1,42 @@
+# =============================================================================
+# HOST FEATURES
+# =============================================================================
+# setup_gui:          Installs Cinnamon, Brave, PyCharm, Fonts, etc.
+# setup_server_utils: Installs UFW, Cockpit, Unattended Upgrades, etc.
+# setup_wireguard:    Installs Wireguard package and wg0.conf
+# setup_nvidia:       Installs proprietary NVIDIA drivers and tools
+# setup_smb_share:    Mounts the specific 'minis' Samba share
+# =============================================================================
+
+hosts_features:
+  rone:
+    setup_gui: false
+    setup_server: true
+    setup_wireguard: true
+    setup_nvidia: false
+    setup_smb_share: false
+
+  fractal:
+    setup_gui: true
+    setup_server: true
+    setup_wireguard: false
+    setup_nvidia: true
+    setup_smb_share: false
+
+  minis:
+    setup_gui: false
+    setup_server: true
+    setup_wireguard: false
+    setup_nvidia: false
+    setup_smb_share: true
+
+  morefine:
+    setup_gui: true
+    setup_server: true
+    setup_wireguard: false
+    setup_nvidia: false
+    setup_smb_share: false
+
 local_storage:
   rone:
     drives:

@@ -6,30 +6,38 @@ keyboard.dconf
 .git
 bitwarden.sh
 
-{{- if eq .chezmoi.osRelease.id "ubuntu" }}
-# Ubuntu Server will not require these:
+# -----------------------------------------------------------------------------
+# 1. LOAD HOST-SPECIFIC FEATURES
+# -----------------------------------------------------------------------------
+{{- $features := dig .chezmoi.hostname (dict) .hosts_features -}}
+
+
+# If this machine does NOT need GUI tools:
+{{- if not (dig "setup_gui" false $features) }}
 .ideavimrc
 .config/autostart
 .config/flameshot
 .local/share/applications
 .condarc
-*mint_setup*
+*setup_gui* {{- end }}
+
+# If this machine does NOT need Server utils:
+{{- if not (dig "setup_server" false $features) }}
+*setup_server*
 {{- end }}
 
-{{- if eq .chezmoi.osRelease.id "linuxmint" }}
-# Linux mint will not require these:
-*server_setup*
+# If this machine does NOT need Wireguard:
+{{- if not (dig "setup_wireguard" false $features) }}
+*setup_wireguard*
 {{- end }}
 
-{{- if not (eq .chezmoi.hostname "rone") }}
-*wireguard*
+# If this machine does NOT need Nvidia drivers:
+{{- if not (dig "setup_nvidia" false $features) }}
+*setup_nvidia*
 {{- end }}
 
-{{- if not (eq .chezmoi.hostname "minis") }}
-*minis_local_storage*
-{{- end }}
-
-{{- if not (eq .chezmoi.hostname "fractal") }}
-*nvidia_drivers*
+# If this machine does NOT need to configure the SMB share:
+{{- if not (dig "setup_smb_share" false $features) }}
+*setup_smb_share*
 {{- end }}
 

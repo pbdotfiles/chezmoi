@@ -1,10 +1,22 @@
 export PATH="$HOME/bin:$PATH"
 
-{{- if eq .chezmoi.osRelease.id "linuxmint" }}
+{{- $features := dig .chezmoi.hostname (dict) .hosts_features -}}
+
+{{- if (dig "setup_gui" false $features) }}
+# PyCharm is only installed on GUI machines
 export PATH="$HOME/.local/share/applications/pycharm-community-2024.2/bin:$PATH"
-alias tm="cd /mnt/ext4_data/projects/trackmania_rl/ && conda activate tm311"
+{{- end }}
+
+{{- if (dig "setup_nvidia" false $features) }}
+# Nvidia specific aliases
 alias nvidia-limit="sudo nvidia-smi -pm 1 && sudo nvidia-smi -pl 100"
 {{- end }}
+
+{{- if eq .chezmoi.hostname "fractal" }}
+# This alias seems specific to the 'fractal' machine (specific path on /mnt/ext4_data)
+alias tm="cd /mnt/ext4_data/projects/trackmania_rl/ && conda activate tm311"
+{{- end }}
+
 
 HISTSIZE=100000
 HISTFILESIZE=100000
