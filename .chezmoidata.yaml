@@ -1,0 +1,26 @@
+local_storage:
+  rone:
+    drives:
+      - uuid: "0cfde01b-f95e-4c53-842b-42674ddd3b25"
+        path: "/mnt/wdd"
+        owner: "paul"
+
+  fractal:
+    drives:
+      - uuid: "bca615bc-2c63-4db8-8408-ddd48b27ab55"
+        path: "/mnt/ext4_data"
+        owner: "paul"
+        symlink_dirs:
+          - "Downloads"
+          - "Documents"
+          - "Pictures"
+          - "Torrents"
+
+  minis:
+    drives:
+      - uuid: "4c1bbb69-68bd-40c9-8257-c519a91d7d99"
+        path: "/mnt/mx500_2t"
+        owner: "paul"
+      - uuid: "134a9171-9aea-4363-809b-5c6565386970"
+        path: "/mnt/mx500_4t"
+        owner: "paul"

@@ -4,45 +4,93 @@ set -euo pipefail
 
 {{ include ".chezmoitemplates/filesystem_utils" }}
 
-{{ $drives := index .storage .chezmoi.hostname "drives" | default list }}
+# Explanation of the line below: 
+# - read the .storage dictionary from .chezmoidata
+# - try to find the key ".chezmoi.hostname"
+# - then try to find the key "drives"
+# If any of these fail, return an empty list
+{{ $drives := dig .chezmoi.hostname "drives" (list) .local_storage }}
 
 {{ if $drives }}
     echo "Configuring storage for {{ .chezmoi.hostname }}..."
 
-    # Unmount all filesystems to ensure clean state before changes
-    # || true is necessary due to set -euo pipefail at the beginning of the script.
-    sudo umount -a || true
-
     {{ range $drives }}
-    {{ $mountPath := .path }} 
-    echo "------------------------------------------------"
-    echo "Setting up {{ $mountPath }}..."
 
-    # 1. Prepare the mount point
-    prepare_mount_point "{{ $mountPath }}" "{{ .owner }}"
+      {{ $mountPath := .path }} 
+      {{ $owner := .owner }}
 
-    # 2. Update /etc/fstab
-    ENTRY="UUID=\"{{ .uuid }}\" {{ $mountPath }} ext4 defaults 0 2"
-    update_fstab "{{ .uuid }}" "$ENTRY"
+      echo "------------------------------------------------"
+      echo "Setting up {{ $mountPath }}..."
+      
+      # 1. Unmount the drive if it already exists
+      if mountpoint -q "{{ $mountPath }}"; then
+          echo "Unmounting {{ $mountPath }} to apply attributes..."
+          sudo umount "{{ $mountPath }}"
+      fi
 
-    # 3. Create Symlinks (if defined)
-    {{ if .symlink_dirs }}
-        echo "Creating symlinks..."
-        {{ range $dir := .symlink_dirs }}
-            # Remove existing symlink or folder safely
-            if [ -L ~/"{{ $dir }}" ]; then rm ~/"{{ $dir }}"; fi
-            if [ -d ~/"{{ $dir }}" ]; then rm -rf ~/"{{ $dir }}"; fi
-            
-            # Create new link using the captured $mountPath
-            ln -s {{ $mountPath }}/"{{ $dir }}" ~/"{{ $dir }}"
-            echo "  Linked ~/"{{ $dir }}" -> {{ $mountPath }}/"{{ $dir }}""
-        {{ end }}
-    {{ end }}
+      # 2. Prepare the mount point if it doesn't exist
+      prepare_mount_point "{{ $mountPath }}" "{{ .owner }}"
+
+      # 3. Update /etc/fstab
+      ENTRY="UUID={{ .uuid }} {{ $mountPath }} ext4 defaults 0 2"
+      update_fstab "{{ .uuid }}" "$ENTRY"
+
+      # 4. Remount the drive
+      sudo systemctl daemon-reload
+      sudo mount "{{ $mountPath }}"
+
+      # 5. Safety check: verify that the correct drive is mounted (in case there are duplicate entries in fstab)
+      # We ask the kernel: "What is the UUID of the device mounted at $mountPath?"
+      MOUNTED_UUID=$(findmnt -n -o UUID --target "{{ $mountPath }}")
+
+      if [ "$MOUNTED_UUID" != "{{ .uuid }}" ]; then
+          echo " [ERROR] Safety check failed!"
+          echo " Expected UUID: {{ .uuid }}"
+          echo " Found UUID:    $MOUNTED_UUID"
+          echo " This implies /etc/fstab has duplicate or conflicting entries."
+          exit 1
+      else
+          echo " [OK] Verified correct device mounted."
+      fi
+
+      # 6. Create symlinks from $HOME to this drive
+      {{ if .symlink_dirs }}
+          echo "Creating symlinks..."
+          {{ range $dir := .symlink_dirs }}
+
+              LINK_PATH="$HOME/{{ $dir }}"
+              TARGET_PATH="{{ $mountPath }}/{{ $dir }}"
+
+              # Summary of common flags
+              # -e: Exists (Anything)
+              # -d: Exists and is a Directory
+              # -f: Exists and is a File
+              # -L: Exists and is a Symlink
+
+              if [ -d "$LINK_PATH" ] && [ ! -L "$LINK_PATH" ]; then
+                  # If there is a real folder at LINK_PATH, soft delete it.
+                  echo "  [SAFETY] Found real content at $LINK_PATH. Backing up..."
+                  mv "$LINK_PATH" "$HOME/backupchezmoi_{{ $dir }}_$(date +%s)"
+              elif [ -L "$LINK_PATH" ]; then
+                  # If there is already a symlink at LINK_PATH, hard delete the link.
+                  rm "$LINK_PATH"
+              fi
+
+              # Ensure the TARGET_PATH exists
+              if [ ! -d "$TARGET_PATH" ]; then
+                  echo "Creating missing directory on drive: $TARGET_PATH"
+                  sudo mkdir -p "$TARGET_PATH"
+                  sudo chown "{{ $owner }}:{{ $owner }}" "$TARGET_PATH"
+              fi
+
+              # Create the symlink
+              ln -s "$TARGET_PATH" "$LINK_PATH"
+              echo "  Linked $LINK_PATH -> $TARGET_PATH"
+          {{ end }}
+      {{ end }}
 
     {{ end }} # End range
 
-    # Remount everything to apply changes immediately
-    sudo mount -a
     echo "Local storage setup complete."
 {{ else }}
     echo "No local storage configuration found for {{ .chezmoi.hostname }}. Skipping."
