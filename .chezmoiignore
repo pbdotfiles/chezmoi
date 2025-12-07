@@ -6,8 +6,6 @@ keyboard.dconf
 .git
 bitwarden.sh
 
-*install_fonts*
-
 {{- if eq .chezmoi.osRelease.id "ubuntu" }}
 # Ubuntu Server will not require these:
 .ideavimrc
@@ -24,7 +22,6 @@ bitwarden.sh
 {{- end }}
 
 {{- if not (eq .chezmoi.hostname "rone") }}
-*rone_local_storage*
 *wireguard*
 {{- end }}
 
@@ -34,6 +31,5 @@ bitwarden.sh
 
 {{- if not (eq .chezmoi.hostname "fractal") }}
 *nvidia_drivers*
-*fractal_local_storage*
 {{- end }}
 

@@ -1,0 +1,90 @@
+#!/bin/bash
+
+set -euo pipefail
+
+{{ include ".chezmoitemplates/filesystem_utils" }}
+
+# ============================================================================
+# CONFIGURATION
+# Define storage devices for each host here.
+# ============================================================================
+{{ $storageConfig := dict
+    "rone" (list
+        (dict
+            "uuid"   "0cfde01b-f95e-4c53-842b-42674ddd3b25"
+            "path"   "/mnt/wdd"
+            "owner"  "paul"
+        )
+    )
+
+    "fractal" (list
+        (dict
+            "uuid"          "bca615bc-2c63-4db8-8408-ddd48b27ab55"
+            "path"          "/mnt/ext4_data"
+            "owner"         "paul"
+            "symlink_dirs"  (list "Downloads" "Documents" "Pictures" "Torrents")
+        )
+    )
+
+    "minis" (list
+        (dict
+            "uuid"          "4c1bbb69-68bd-40c9-8257-c519a91d7d99"
+            "path"          "/mnt/mx500_2t"
+            "owner"         "paul"
+        )
+        (dict
+            "uuid"          "134a9171-9aea-4363-809b-5c6565386970"
+            "path"          "/mnt/mx500_4t"
+            "owner"         "paul"
+        )
+    )
+
+}}
+
+# ============================================================================
+# EXECUTION
+# ============================================================================
+
+{{ $drives := get $storageConfig .chezmoi.hostname | default list }}
+
+{{ if $drives }}
+    echo "Configuring storage for {{ .chezmoi.hostname }}..."
+
+    # Unmount all filesystems to ensure clean state before changes
+    # || true is necessary due to set -euo pipefail at the beginning of the script.
+    sudo umount -a || true
+
+    {{ range $drives }}
+    {{ $mountPath := .path }} 
+    echo "------------------------------------------------"
+    echo "Setting up {{ $mountPath }}..."
+
+    # 1. Prepare the mount point
+    prepare_mount_point "{{ $mountPath }}" "{{ .owner }}"
+
+    # 2. Update /etc/fstab
+    ENTRY="UUID=\"{{ .uuid }}\" {{ $mountPath }} ext4 defaults 0 2"
+    update_fstab "{{ .uuid }}" "$ENTRY"
+
+    # 3. Create Symlinks (if defined)
+    {{ if .symlink_dirs }}
+        echo "Creating symlinks..."
+        {{ range $dir := .symlink_dirs }}
+            # Remove existing symlink or folder safely
+            if [ -L ~/"{{ $dir }}" ]; then rm ~/"{{ $dir }}"; fi
+            if [ -d ~/"{{ $dir }}" ]; then rm -rf ~/"{{ $dir }}"; fi
+            
+            # Create new link using the captured $mountPath
+            ln -s {{ $mountPath }}/"{{ $dir }}" ~/"{{ $dir }}"
+            echo "  Linked ~/"{{ $dir }}" -> {{ $mountPath }}/"{{ $dir }}""
+        {{ end }}
+    {{ end }}
+
+    {{ end }} # End range
+
+    # Remount everything to apply changes immediately
+    sudo mount -a
+    echo "Local storage setup complete."
+{{ else }}
+    echo "No local storage configuration found for {{ .chezmoi.hostname }}. Skipping."
+{{ end }}
