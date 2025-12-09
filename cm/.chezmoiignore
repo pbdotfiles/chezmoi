@@ -1,12 +1,3 @@
-.gitignore
-README.md
-LLM_README.md
-keybindings.dconf
-keyboard.dconf
-.idea
-.git
-bitwarden.sh
-
 # -----------------------------------------------------------------------------
 # 1. LOAD HOST-SPECIFIC FEATURES
 # -----------------------------------------------------------------------------
