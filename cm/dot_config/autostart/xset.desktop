@@ -1,6 +1,6 @@
 [Desktop Entry]
 Type=Application
-Exec=while true; do xset r rate 220 50; sleep 10; done
+Exec=sh -c "while true; do xset r rate 220 50; sleep 10; done"
 X-GNOME-Autostart-enabled=true
 NoDisplay=false
 Hidden=false
