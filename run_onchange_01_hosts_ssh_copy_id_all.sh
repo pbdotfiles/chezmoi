@@ -2,7 +2,9 @@
 
 set -euo pipefail
 
-ssh-keygen -t rsa
+if [ ! -f ~/.ssh/id_rsa ]; then
+  ssh-keygen -t rsa -N "" -f ~/.ssh/id_rsa
+fi
 
 echo "=========================== SSH_COPY_ID_ALL =============="
 
