@@ -1,5 +1,6 @@
 .gitignore
 README.md
+LLM_README.md
 keybindings.dconf
 keyboard.dconf
 .idea
@@ -11,7 +12,6 @@ bitwarden.sh
 # -----------------------------------------------------------------------------
 {{- $features := dig .chezmoi.hostname (dict) .hosts_features -}}
 
-
 # If this machine does NOT need GUI tools:
 {{- if not (dig "setup_gui" false $features) }}
 .ideavimrc
@@ -19,7 +19,13 @@ bitwarden.sh
 .config/flameshot
 .local/share/applications
 .condarc
-*setup_gui* {{- end }}
+*setup_obsidian*
+*setup_miniforge*
+*setup_brave*
+*setup_gui_misc*
+*setup_wine*
+*cinnamon_fix*
+{{- end }}
 
 # If this machine does NOT need Server utils:
 {{- if not (dig "setup_server" false $features) }}
@@ -39,5 +45,10 @@ bitwarden.sh
 # If this machine does NOT need to configure the SMB share:
 {{- if not (dig "setup_smb_share" false $features) }}
 *setup_smb_share*
+{{- end }}
+
+# If this machine does NOT need hdidle:
+{{- if not (dig "setup_hd_idle" false $features) }}
+*setup_hd_idle*
 {{- end }}
 

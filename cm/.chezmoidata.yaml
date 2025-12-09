@@ -15,6 +15,7 @@ hosts_features:
     setup_wireguard: true
     setup_nvidia: false
     setup_smb_share: false
+    setup_hd_idle: true
 
   fractal:
     setup_gui: true

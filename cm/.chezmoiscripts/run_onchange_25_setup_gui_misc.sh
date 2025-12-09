@@ -1,0 +1,18 @@
+#!/bin/bash
+
+set -euo pipefail
+
+sudo apt install remmina filelight gnome-tweaks qbittorrent flameshot -y
+
+#############################
+# DCONF for GNOME-TWEAK-TOOLS
+#dconf load /org/cinnamon/desktop/keybindings/ <~/.local/share/chezmoi/keybindings.dconf
+#dconf load /org/cinnamon/desktop/peripherals/keyboard/ <~/.local/share/chezmoi/keyboard.dconf
+
+##############################
+# PYCHARM 2024.2
+#wget -q -O pycharm.tar.gz https://download.jetbrains.com/python/pycharm-community-2024.2.tar.gz
+#tar -xzf pycharm.tar.gz -C ~/.local/share/applications
+#~/.local/share/applications/pycharm-community-2024.2/bin/pycharm
+#rm pycharm.tar.gz
+
