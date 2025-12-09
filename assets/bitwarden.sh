@@ -4,6 +4,7 @@ set -euo pipefail
 curl -L "https://vault.bitwarden.eu/download/?app=cli&platform=linux" >bw.zip
 unzip bw.zip
 chmod +x bw
+mkdir -p ~/bin
 mv bw ~/bin/
 rm bw.zip
 ~/bin/bw config server https://vault.bitwarden.eu
