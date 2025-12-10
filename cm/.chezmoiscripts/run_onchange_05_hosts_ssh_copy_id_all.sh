@@ -26,7 +26,7 @@ if [[ "$response" =~ ^[Yy][Ee][Ss]$ ]]; then
       echo "Skipping $hostname (current machine)"
     else
       echo "Copying SSH key to $hostname"
-      ssh-copy-id -i ~/.ssh/id_rsa.pub -o StrictHostKeyChecking=no -o ConnectTimeout=2 "$hostname"
+      ssh-copy-id -i ~/.ssh/id_rsa.pub -o StrictHostKeyChecking=no -o ConnectTimeout=2 "$hostname" || true
     fi
   done
   echo "SSH keys copied successfully"
