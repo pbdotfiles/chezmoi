@@ -5,41 +5,41 @@
 
 # If this machine does NOT need GUI tools:
 {{- if not (dig "setup_gui" false $features) }}
-.ideavimrc
-.config/autostart
-.config/flameshot
-.local/share/applications
-.condarc
-*setup_obsidian*
-*setup_miniforge*
-*setup_brave*
-*setup_gui_misc*
-*setup_wine*
-*cinnamon_fix*
+**/.ideavimrc
+**/.config/autostart
+**/.config/flameshot
+**/.local/share/applications
+**/.condarc
+**/*setup_obsidian*
+**/*setup_miniforge*
+**/*setup_brave*
+**/*setup_gui_misc*
+**/*setup_wine*
+**/*cinnamon_fix*
 {{- end }}
 
 # If this machine does NOT need Server utils:
 {{- if not (dig "setup_server" false $features) }}
-*setup_server*
+**/*setup_server*
 {{- end }}
 
 # If this machine does NOT need Wireguard:
 {{- if not (dig "setup_wireguard" false $features) }}
-*setup_wireguard*
+**/*setup_wireguard*
 {{- end }}
 
 # If this machine does NOT need Nvidia drivers:
 {{- if not (dig "setup_nvidia" false $features) }}
-*setup_nvidia*
+**/*setup_nvidia*
 {{- end }}
 
 # If this machine does NOT need to configure the SMB share:
 {{- if not (dig "setup_smb_share" false $features) }}
-*setup_smb_share*
+**/*setup_smb_share*
 {{- end }}
 
 # If this machine does NOT need hdidle:
 {{- if not (dig "setup_hd_idle" false $features) }}
-*setup_hd_idle*
+**/*setup_hd_idle*
 {{- end }}
 
