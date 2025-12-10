@@ -17,7 +17,6 @@ sudo apt install --yes --install-recommends winehq-staging # FIXEDVERSION
 # sudo apt install --install-recommends winehq-staging=9.17~noble-1 -y
 
 sudo apt install winetricks -y
-winetricks dxvk
-winetricks isolate_home
-
-
+winetricks -q mono
+winetricks -q dxvk
+winetricks -q isolate_home
