@@ -19,27 +19,27 @@
 {{- end }}
 
 # If this machine does NOT need Server utils:
-{{- if not (dig "setup_server" true $features) }}
+{{- if not (dig "setup_server" false $features) }}
 *setup_server*
 {{- end }}
 
 # If this machine does NOT need Wireguard:
-{{- if not (dig "setup_wireguard" true $features) }}
+{{- if not (dig "setup_wireguard" false $features) }}
 *setup_wireguard*
 {{- end }}
 
 # If this machine does NOT need Nvidia drivers:
-{{- if not (dig "setup_nvidia" true $features) }}
+{{- if not (dig "setup_nvidia" false $features) }}
 *setup_nvidia*
 {{- end }}
 
 # If this machine does NOT need to configure the SMB share:
-{{- if not (dig "setup_smb_share" true $features) }}
+{{- if not (dig "setup_smb_share" false $features) }}
 *setup_smb_share*
 {{- end }}
 
 # If this machine does NOT need hdidle:
-{{- if not (dig "setup_hd_idle" true $features) }}
+{{- if not (dig "setup_hd_idle" false $features) }}
 *setup_hd_idle*
 {{- end }}
 
