@@ -19,7 +19,7 @@ hosts_features:
 
   fractal:
     setup_gui: true
-    setup_server: true
+    setup_server: false 
     setup_wireguard: false
     setup_nvidia: true
     setup_smb_share: false
@@ -33,10 +33,17 @@ hosts_features:
 
   morefine:
     setup_gui: true
-    setup_server: true
+    setup_server: false
     setup_wireguard: false
     setup_nvidia: false
     setup_smb_share: false
+
+  mintvm:
+    setup_gui: true
+    setup_server: false
+    setup_wireguard: false
+    setup_nvidia: false
+    setup_smb_share: true
 
 local_storage:
   rone:
