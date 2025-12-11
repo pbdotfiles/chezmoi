@@ -7,7 +7,7 @@ mkdir -p "$BIN_DIR"
 
 echo "### Updating System and Installing Core Dependencies ###"
 sudo apt update
-sudo apt install -y curl git build-essential ripgrep fd-find unzip tar xclip
+sudo apt install -y curl git build-essential ripgrep fd-find unzip tar xclip python3-venv python3-dev python3-setuptools python3-pynvim imagemagick sqlite3 libsqlite3-dev luarocks zip
 
 # Create a symlink for fd if it doesn't exist (Ubuntu installs it as fdfind)
 if ! command -v fd &>/dev/null; then
@@ -24,7 +24,7 @@ fi
 
 echo "### Installing tree-sitter-cli ###"
 # We try to install via npm as it's the standard way for this tool
-sudo npm install -g tree-sitter-cli
+sudo npm install -g tree-sitter-cli neovim
 
 echo "### Installing FZF ###"
 if [ ! -d "$HOME/.fzf" ]; then
