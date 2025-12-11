@@ -9,4 +9,3 @@ mv bw ~/bin/
 rm bw.zip
 ~/bin/bw config server https://vault.bitwarden.eu
 export PATH="$HOME/bin:$PATH"
-export BW_SESSION=$($HOME/bin/bw login --raw)
