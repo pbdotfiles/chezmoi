@@ -52,9 +52,9 @@ if dpkg -l | grep -q neovim; then
 fi
 
 # Download AppImage
-curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim.appimage
-chmod u+x nvim.appimage
-mv nvim.appimage "$BIN_DIR/nvim"
+curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.appimage
+chmod u+x nvim-linux-x86_64.appimage
+mv nvim-linux-x86_64.appimage "$BIN_DIR/nvim"
 echo "Neovim installed to $BIN_DIR/nvim"
 
 echo "### Backing up and Removing Old Vim Configs ###"
