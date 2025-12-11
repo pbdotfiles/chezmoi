@@ -15,7 +15,9 @@
 **/*setup_brave*
 **/*setup_gui_misc*
 **/*setup_wine*
+**/*setup_printscreen*
 **/*cinnamon_fix*
+
 {{- end }}
 
 # If this machine does NOT need Server utils:

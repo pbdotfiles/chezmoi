@@ -6,8 +6,7 @@ System setup and dotfiles using [`chezmoi`](https://www.chezmoi.io/)
 
 1. Install chezmoi: `sh -c "$(curl -fsLS get.chezmoi.io)"` in `~`
 2. Clone the chezmoi repository: `~/bin/chezmoi init https://github.com/pbdotfiles/chezmoi.git`
-3. Configure Bitwarden: `source ~/.local/share/chezmoi/assets/bitwarden.sh`
-4. Run `~/bin/chezmoi apply`
+3. Run `~/bin/chezmoi apply`
 
 ## Manual installation steps
 Wireguard configuration:
@@ -17,12 +16,3 @@ Wireguard configuration:
 4. `sudo mv /tmp/wg0.conf /etc/wireguard/wg0.conf`
 5. `sudo chmod 600 /etc/wireguard/wg0.conf`
 
-## Other dotfiles available on github
-https://github.com/renemarc/dotfiles/tree/master
-
-## dconf checklist:
-`dconf dump /org/cinnamon/desktop/keybindings/ > keybindings.dconf`
-`dconf dump /org/cinnamon/desktop/peripherals/keyboard/ > keyboard.dconf`
-
-`dconf load /org/cinnamon/desktop/keybindings/ < keybindings.dconf`
-`dconf load /org/cinnamon/desktop/peripherals/keyboard/ < keyboard.dconf`
