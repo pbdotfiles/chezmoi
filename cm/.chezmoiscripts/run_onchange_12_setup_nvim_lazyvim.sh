@@ -7,7 +7,7 @@ mkdir -p "$BIN_DIR"
 
 echo "### Updating System and Installing Core Dependencies ###"
 sudo apt update
-sudo apt install -y curl git build-essential ripgrep fd-find unzip tar
+sudo apt install -y curl git build-essential ripgrep fd-find unzip tar xclip
 
 # Create a symlink for fd if it doesn't exist (Ubuntu installs it as fdfind)
 if ! command -v fd &>/dev/null; then
