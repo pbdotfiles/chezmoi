@@ -5,15 +5,16 @@ set -euo pipefail
 {{ include ".chezmoitemplates/filesystem_utils" }}
 # MOUNT POINTS
 
-sudo umount -a || true
+if mountpoint -q /mnt/minis_share; then
+    sudo umount /mnt/minis_share
+fi
 
 prepare_mount_point "/mnt/minis_share" "paul"
 
-# CREDENTIALS
-read -s -p "Enter password for minis SAMBA share: " password
-sudo tee /root/.smbcredentials >/dev/null <<EOF
+# Write .smbcredentials
+cat <<EOF | sudo install -m 600 /dev/stdin /root/.smbcredentials
 username=paul
-password=$password
+password={{ (bitwardenFields "item" "Home_network").Samba_share_password.value }}
 EOF
 
 # FSTAB
