@@ -1,0 +1,27 @@
+#!/bin/bash
+
+set -euo pipefail
+
+# Ensure SSH key exists
+if [ ! -f ~/.ssh/id_rsa ]; then
+  ssh-keygen -t rsa -N "" -f ~/.ssh/id_rsa
+fi
+
+copy_id() {
+  local host=$1
+  local user=$2
+  local pass=$3
+  echo "---------------------------------------------------"
+  echo "Attempting to copy ID to ${user}@${host}..."
+  if sshpass -p "$pass" ssh-copy-id -o StrictHostKeyChecking=no -o ConnectTimeout=5 "${user}@${host}"; then
+    echo "✅ Success: Key copied to $host"
+  else
+    echo "⚠️  WARNING: Could not connect to $host. Skipping..."
+  fi
+}
+
+copy_id "minis" "paul" "{{ (bitwarden "item" "homenetwork_minis_paul").login.password }}"
+copy_id "rone" "paul" "{{ (bitwarden "item" "homenetwork_rone_paul").login.password }}"
+copy_id "fractal" "paul" "{{ (bitwarden "item" "homenetwork_fractal_paul").login.password }}"
+copy_id "morefine" "paul" "{{ (bitwarden "item" "homenetwork_morefine_paul").login.password }}"
+copy_id "ser" "paul" "{{ (bitwarden "item" "homenetwork_ser_paul").login.password }}"
