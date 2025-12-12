@@ -44,6 +44,14 @@ hosts_features:
     setup_wireguard: false
     setup_nvidia: false
     setup_smb_share: true
+  
+  vmunbuntuserver:
+    setup_gui: false
+    setup_server: true
+    setup_wireguard: false
+    setup_nvidia: false
+    setup_smb_share: false
+    setup_hd_idle: false
 
 local_storage:
   rone:
