@@ -27,3 +27,10 @@ PROMPT_COMMAND="history -a; history -c; history -r; $PROMPT_COMMAND"
 alias vi="nvim"
 alias vim="nvim"
 
+# Enable fzf keybindings and completion if installed
+if [ -f /usr/share/doc/fzf/examples/key-bindings.bash ]; then
+    source /usr/share/doc/fzf/examples/key-bindings.bash
+fi
+if [ -f /usr/share/doc/fzf/examples/completion.bash ]; then
+    source /usr/share/doc/fzf/examples/completion.bash
+fi
