@@ -9,9 +9,7 @@
 **/.config/autostart
 **/.config/flameshot
 **/.local/share/applications
-**/.condarc
 **/*setup_obsidian*
-**/*setup_miniforge*
 **/*setup_brave*
 **/*setup_gui_misc*
 **/*setup_wine*
@@ -20,6 +18,12 @@
 **/*setup_kitty_terminal*
 **/.config/kitty
 **/*install_fonts*
+{{- end }}
+
+# If this machine does NOT need Server utils:
+{{- if not (dig "setup_conda" false $features) }}
+**/.condarc
+**/*setup_miniforge*
 {{- end }}
 
 # If this machine does NOT need Server utils:
