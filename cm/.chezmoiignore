@@ -51,6 +51,10 @@
 **/*setup_hd_idle*
 {{- end }}
 
+# If this machine does NOT need docker:
+{{- if not (dig "setup_docker" false $features) }}
+**/*setup_docker*
+{{- end }}
 # Never ignore those:
 # ssh_copy_id_all
 # check_bitwarden
