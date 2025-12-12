@@ -9,3 +9,4 @@ mv bw ~/bin/
 rm bw.zip
 ~/bin/bw config server https://vault.bitwarden.eu
 export PATH="$HOME/bin:$PATH"
+source ~/.local/share/chezmoi/assets/bw_login.sh
