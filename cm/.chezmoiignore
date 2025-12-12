@@ -18,6 +18,7 @@
 **/*setup_printscreen*
 **/*cinnamon_fix*
 **/*setup_kitty_terminal*
+**/.config/kitty
 **/*install_fonts*
 {{- end }}
 
