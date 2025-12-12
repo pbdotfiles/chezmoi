@@ -1,0 +1,28 @@
+#!/bin/bash
+
+set -euo pipefail
+
+# Install Kitty
+if ! command -v kitty &>/dev/null; then
+  echo "🐱 Installing Kitty..."
+  sudo apt update && sudo apt install -y kitty
+fi
+
+# Make kitty the default terminal in Cinnamon
+if command -v gsettings >/dev/null 2>&1; then
+  CURRENT_TERM=$(gsettings get org.cinnamon.desktop.default-applications.terminal exec)
+  if [ "$CURRENT_TERM" != "'kitty'" ]; then
+    echo "🔧 Setting Kitty as default Cinnamon terminal..."
+    gsettings set org.cinnamon.desktop.default-applications.terminal exec 'kitty'
+    gsettings set org.cinnamon.desktop.default-applications.terminal exec-arg ''
+  fi
+fi
+
+# Make kitty the default terminal system-wide (just in case a program doesn't use the Cinammon config)
+if command -v update-alternatives >/dev/null 2>&1 && [ -f "/usr/bin/kitty" ]; then
+  # Check if kitty is already the master
+  if ! update-alternatives --query x-terminal-emulator 2>/dev/null | grep -q "Value: /usr/bin/kitty"; then
+    echo "🔧 Setting Kitty as system-wide x-terminal-emulator (requires sudo)..."
+    sudo update-alternatives --set x-terminal-emulator /usr/bin/kitty
+  fi
+fi

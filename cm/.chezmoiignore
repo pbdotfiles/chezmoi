@@ -17,7 +17,8 @@
 **/*setup_wine*
 **/*setup_printscreen*
 **/*cinnamon_fix*
-
+**/*setup_kitty_terminal*
+**/*install_fonts*
 {{- end }}
 
 # If this machine does NOT need Server utils:
@@ -45,3 +46,10 @@
 **/*setup_hd_idle*
 {{- end }}
 
+# Never ignore those:
+# ssh_copy_id_all
+# check_bitwarden
+# setup_apt_common
+# local_storage
+# nvim_lazyvim
+# setup_starship
