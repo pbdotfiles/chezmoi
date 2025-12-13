@@ -1,62 +1,63 @@
-# Utilities for safely managing /etc/fstab entries.
-
-
-# update_fstab(identifier, full_entry)
-#   Safely adds or updates a line in /etc/fstab.
-#   - Robust: Removes any existing lines matching 'identifier' and appends the new 'full_entry'.
-#             This ensures parameters are updated even if the UUID/ID stays the same.
-#   - System-aware: Reloads systemd daemon automatically to apply changes.
-#
-# Usage: 
-#   update_fstab "IDENTIFIER_STRING" "FULL_MOUNT_LINE"
-update_fstab() {
-    # use "fdisk -l" and "blkid" to get the UUID of a disk
-    local id="$1"
-    local entry="$2"
-    local fstab="/etc/fstab"
-
-    # 1. Remove old entries containing the identifier
-    # We use sed to delete lines matching the ID. 
-    if grep -q "$id" "$fstab"; then
-        echo "Removing old/existing entry for '$id'..."
-        sudo sed -i "/$id/d" "$fstab"
-    fi
-
-    # 2. Append the new entry
-    echo "Adding/Updating entry for '$id'..."
-    echo "$entry" | sudo tee -a "$fstab" > /dev/null
-    
-    # 3. Reload systemd to pick up changes immediately
-    sudo systemctl daemon-reload
-    echo "Systemd daemon reloaded."
-}
-
-
+# Utilities for safely managing the filesystem.
 
 # prepare_mount_point(directory, owner)
-#   Creates a directory, ensures it is owned by the user, and sets the 
-#   immutable attribute (+i) to prevent accidental writes when unmounted.
-#   - directory: The full path to the mount point (e.g., /mnt/data)
-#   - owner: The user to own the directory.
+#   Safely prepares a directory for mounting.
+#   - Unmounts the path if currently mounted.
+#   - Creates directory if missing.
+#   - Sets immutable attribute (+i) on the underlying folder to prevent
+#     accidental writes when the drive is NOT mounted.
 prepare_mount_point() {
     local dir="$1"
     local owner="$2"
+
+    if mountpoint -q "$dir"; then
+        echo "⚠️  Drive currently mounted at $dir. Unmounting to configure mount point..."
+        sudo umount "$dir"
+    fi
 
     if [ ! -d "$dir" ]; then
         echo "Creating mount point: $dir"
         sudo mkdir -p "$dir"
     fi
 
-    # 1. Unlock (in case it was already locked)
+    # Unlock, set owner, then Lock
     sudo chattr -i "$dir"
-
-    # 2. Set ownership
-    # We use -R just in case some accidental files were created there,
-    # though usually, it should be empty.
     sudo chown -R "$owner" "$dir"
-
-    # 3. Lock (Immutable)
-    # This prevents anything from writing to this folder if the drive is NOT mounted.
     sudo chattr +i "$dir"
     echo "Mount point $dir prepared and locked."
+}
+
+clean_legacy_fstab() {
+    local id="$1" # either UUID or //minis/share
+    local mount_path="$2"
+    local fstab="/etc/fstab"
+
+    # 1. Remove by ID (UUID or SMB Path)
+    if grep -q "$id" "$fstab"; then
+        echo "Removing legacy fstab entry for ID='$id'..."
+        sudo sed -i "\|$id|d" "$fstab"
+    fi
+
+    # 2. Remove by Mount Path (Target)
+    if grep -qE "^$mount_path[[:space:]]" "$fstab"; then
+        echo "Removing legacy fstab entry for path=$mount_path..."
+        sudo sed -i "\|^$mount_path[[:space:]]|d" "$fstab"
+    fi
+
+    sudo systemctl daemon-reload
+}
+
+
+update_fstab() {
+    local id="$1"
+    local mount_point="$2"
+    local entry="$3"
+
+    # Delegate cleanup to the helper function
+    clean_legacy_fstab "$id" "$mount_point"
+
+    echo "Adding/Updating entry for '$id'..."
+    echo "$entry" | sudo tee -a "/etc/fstab" > /dev/null
+    
+    sudo systemctl daemon-reload
 }

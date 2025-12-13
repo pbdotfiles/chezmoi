@@ -5,11 +5,13 @@ set -euo pipefail
 {{ include ".chezmoitemplates/filesystem_utils" }}
 # MOUNT POINTS
 
-if mountpoint -q /mnt/minis_share; then
-    sudo umount /mnt/minis_share
+MOUNT_POINT="/mnt/minis_share"
+
+if mountpoint -q "$MOUNT_POINT"; then
+    sudo umount "$MOUNT_POINT"
 fi
 
-prepare_mount_point "/mnt/minis_share" "paul"
+prepare_mount_point "$MOUNT_POINT" "paul"
 
 # Write .smbcredentials
 cat <<EOF | sudo install -m 600 /dev/stdin /root/.smbcredentials
@@ -19,8 +21,8 @@ EOF
 
 # FSTAB
 SHARE_ID="//minis/share"
-ENTRY="$SHARE_ID /mnt/minis_share cifs credentials=/root/.smbcredentials,uid=1000,gid=1000,dir_mode=0755,file_mode=0755,iocharset=utf8,noauto,x-systemd.automount,_netdev 0 0"
-update_fstab "$SHARE_ID" "$ENTRY"
+ENTRY="$SHARE_ID $MOUNT_POINT cifs credentials=/root/.smbcredentials,uid=1000,gid=1000,dir_mode=0755,file_mode=0755,iocharset=utf8,noauto,x-systemd.automount,_netdev 0 0"
+update_fstab "$SHARE_ID" "$MOUNT_POINT" "$ENTRY"
 
 # Re-mount everything
 sudo mount -a

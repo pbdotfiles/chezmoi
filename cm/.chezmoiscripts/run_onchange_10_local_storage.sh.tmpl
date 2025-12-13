@@ -4,94 +4,82 @@ set -euo pipefail
 
 {{ include ".chezmoitemplates/filesystem_utils" }}
 
-# Explanation of the line below: 
-# - read the .storage dictionary from .chezmoidata
-# - try to find the key ".chezmoi.hostname"
-# - then try to find the key "drives"
-# If any of these fail, return an empty list
 {{ $drives := dig .chezmoi.hostname "drives" (list) .local_storage }}
 
 {{ if $drives }}
-    echo "Configuring storage for {{ .chezmoi.hostname }}..."
+    echo "Configuring systemd storage units for {{ .chezmoi.hostname }}..."
 
     {{ range $drives }}
+    
+    MOUNT_PATH="{{ .path }}"
+    UUID="{{ .uuid }}"
+    OWNER="{{ .owner }}"
+    
+    # Generate the Unit Name (e.g., mnt-wdd.mount)
+    UNIT_NAME=$(systemd-escape --path --suffix=mount "$MOUNT_PATH")
+    UNIT_FILE="/etc/systemd/system/$UNIT_NAME"
 
-      {{ $mountPath := .path }} 
-      {{ $owner := .owner }}
+    echo "------------------------------------------------"
+    echo "Processing $MOUNT_PATH ($UNIT_NAME)..."
 
-      echo "------------------------------------------------"
-      echo "Setting up {{ $mountPath }}..."
-      
-      # 1. Unmount the drive if it already exists
-      if mountpoint -q "{{ $mountPath }}"; then
-          echo "Unmounting {{ $mountPath }} to apply attributes..."
-          sudo umount "{{ $mountPath }}"
-      fi
+    # A. Clean up old fstab (Pass both UUID and Path for safety)
+    clean_legacy_fstab "$UUID" "$MOUNT_PATH"
 
-      # 2. Prepare the mount point if it doesn't exist
-      prepare_mount_point "{{ $mountPath }}" "{{ .owner }}"
+    # B. Prepare the directory (Safely unmounts if needed)
+    prepare_mount_point "$MOUNT_PATH" "$OWNER"
 
-      # 3. Update /etc/fstab
-      ENTRY="UUID={{ .uuid }} {{ $mountPath }} ext4 defaults 0 2"
-      update_fstab "{{ .uuid }}" "$ENTRY"
+    # C. Write the Systemd Unit File
+    echo "Writing systemd unit: $UNIT_FILE"
+    cat <<EOF | sudo install -m 644 /dev/stdin "$UNIT_FILE"
+[Unit]
+Description=Mount Local Drive at $MOUNT_PATH
+Documentation=man:systemd.unit(5)
+JobRunningTimeoutSec=30
 
-      # 4. Remount the drive
-      sudo systemctl daemon-reload
-      sudo mount "{{ $mountPath }}"
+[Mount]
+What=/dev/disk/by-uuid/$UUID
+Where=$MOUNT_PATH
+Type=ext4
+Options=defaults
+DirectoryMode=0755
 
-      # 5. Safety check: verify that the correct drive is mounted (in case there are duplicate entries in fstab)
-      # We ask the kernel: "What is the UUID of the device mounted at $mountPath?"
-      MOUNTED_UUID=$(findmnt -n -o UUID --target "{{ $mountPath }}")
+[Install]
+WantedBy=multi-user.target
+EOF
 
-      if [ "$MOUNTED_UUID" != "{{ .uuid }}" ]; then
-          echo " [ERROR] Safety check failed!"
-          echo " Expected UUID: {{ .uuid }}"
-          echo " Found UUID:    $MOUNTED_UUID"
-          echo " This implies /etc/fstab has duplicate or conflicting entries."
-          exit 1
-      else
-          echo " [OK] Verified correct device mounted."
-      fi
+    # D. Enable and Start
+    echo "Reloading and starting unit..."
+    sudo systemctl daemon-reload
+    sudo systemctl enable --now "$UNIT_NAME"
 
-      # 6. Create symlinks from $HOME to this drive
-      {{ if .symlink_dirs }}
-          echo "Creating symlinks..."
-          {{ range $dir := .symlink_dirs }}
+    # E. Symlink Logic
+    {{ if .symlink_dirs }}
+        echo "Verifying symlinks..."
+        {{ range $dir := .symlink_dirs }}
+            LINK_PATH="$HOME/{{ $dir }}"
+            TARGET_PATH="$MOUNT_PATH/{{ $dir }}"
 
-              LINK_PATH="$HOME/{{ $dir }}"
-              TARGET_PATH="{{ $mountPath }}/{{ $dir }}"
+            if [ -d "$LINK_PATH" ] && [ ! -L "$LINK_PATH" ]; then
+                echo "  [SAFETY] Found real content at $LINK_PATH. Backing up..."
+                mv "$LINK_PATH" "$HOME/backupchezmoi_{{ $dir }}_$(date +%s)"
+            elif [ -L "$LINK_PATH" ]; then
+                rm "$LINK_PATH"
+            fi
 
-              # Summary of common flags
-              # -e: Exists (Anything)
-              # -d: Exists and is a Directory
-              # -f: Exists and is a File
-              # -L: Exists and is a Symlink
+            if [ ! -d "$TARGET_PATH" ]; then
+                echo "Creating directory on drive: $TARGET_PATH"
+                sudo mkdir -p "$TARGET_PATH"
+                sudo chown "$OWNER:$OWNER" "$TARGET_PATH"
+            fi
 
-              if [ -d "$LINK_PATH" ] && [ ! -L "$LINK_PATH" ]; then
-                  # If there is a real folder at LINK_PATH, soft delete it.
-                  echo "  [SAFETY] Found real content at $LINK_PATH. Backing up..."
-                  mv "$LINK_PATH" "$HOME/backupchezmoi_{{ $dir }}_$(date +%s)"
-              elif [ -L "$LINK_PATH" ]; then
-                  # If there is already a symlink at LINK_PATH, hard delete the link.
-                  rm "$LINK_PATH"
-              fi
-
-              # Ensure the TARGET_PATH exists
-              if [ ! -d "$TARGET_PATH" ]; then
-                  echo "Creating missing directory on drive: $TARGET_PATH"
-                  sudo mkdir -p "$TARGET_PATH"
-                  sudo chown "{{ $owner }}:{{ $owner }}" "$TARGET_PATH"
-              fi
-
-              # Create the symlink
-              ln -s "$TARGET_PATH" "$LINK_PATH"
-              echo "  Linked $LINK_PATH -> $TARGET_PATH"
-          {{ end }}
-      {{ end }}
+            ln -s "$TARGET_PATH" "$LINK_PATH"
+            echo "  Linked $LINK_PATH -> $TARGET_PATH"
+        {{ end }}
+    {{ end }}
 
     {{ end }} # End range
 
-    echo "Local storage setup complete."
+    echo "✅ Storage setup complete."
 {{ else }}
-    echo "No local storage configuration found for {{ .chezmoi.hostname }}. Skipping."
+    echo "No local storage configuration found for {{ .chezmoi.hostname }}."
 {{ end }}
