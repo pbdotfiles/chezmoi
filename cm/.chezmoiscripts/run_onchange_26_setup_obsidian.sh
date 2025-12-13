@@ -4,7 +4,8 @@ set -euo pipefail
 
 if ! command -v obsidian &>/dev/null; then
   echo "Begin installing obsidian."
-  OBSIDIAN_URL=$(wget -q -O - https://api.github.com/repos/obsidianmd/obsidian-releases/releases/latest | grep 'deb"$' | awk -F'"' ' {print $4}  ')
+  API_URL="https://api.github.com/repos/obsidianmd/obsidian-releases/releases/latest"
+  OBSIDIAN_URL=$(curl -s "$API_URL" | jq -r '.assets[] | select(.name | test("amd64.deb$")) | .browser_download_url')
   if [ -z "$OBSIDIAN_URL" ]; then
     echo "Failed to fetch Obsidian URL"
     exit 1
