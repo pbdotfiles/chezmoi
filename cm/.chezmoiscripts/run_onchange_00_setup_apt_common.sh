@@ -3,6 +3,49 @@
 set -euo pipefail
 
 sudo apt update
-sudo apt upgrade -y
 
-sudo apt install cifs-utils borgbackup lm-sensors exiftool syncthing htop btop stress s-tui nload liblzo2-dev git tmux openssh-server tree fuse3 libfuse-dev pkg-config sshfs bat jq sshpass curl git build-essential ripgrep fd-find unzip xclip python3-venv python3-dev python3-setuptools python3-pynvim imagemagick sqlite3 libsqlite3-dev luarocks zip wget 7zip poppler-utils -y
+PACKAGES=(
+  7zip
+  bat
+  borgbackup
+  btop
+  build-essential
+  cifs-utils
+  curl
+  exiftool
+  fd-find
+  fuse3
+  git
+  htop
+  imagemagick
+  jq
+  libfuse-dev
+  liblzo2-dev
+  libsqlite3-dev
+  lm-sensors
+  luarocks
+  nload
+  openssh-server
+  pkg-config
+  poppler-utils
+  python3-dev
+  python3-pynvim
+  python3-setuptools
+  python3-venv
+  ripgrep
+  s-tui
+  sqlite3
+  sshfs
+  sshpass
+  stress
+  syncthing
+  tmux
+  tree
+  unzip
+  wget
+  xclip
+  zip
+)
+
+echo "Installing common APT packages..."
+sudo apt install -y "${PACKAGES[@]}"
