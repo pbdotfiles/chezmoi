@@ -4,7 +4,8 @@ set -euo pipefail
 
 echo "Configuring hd-idle."
 
-HDIDLE_URL=$(wget -q -O - https://api.github.com/repos/adelolmo/hd-idle/releases/latest | grep 'amd64\.deb"$' | awk -F'"' ' {print $4}  ')
+HDIDLE_URL=$(curl -s "https://api.github.com/repos/adelolmo/hd-idle/releases/latest" |
+  jq -r '.assets[] | select(.name | endswith("amd64.deb")) | .browser_download_url')
 
 if [ -z "$HDIDLE_URL" ]; then
   echo "Error: Failed to fetch hd-idle URL."

@@ -11,7 +11,8 @@ if [ ! -d "${fonts_dir}" ]; then
   mkdir -p "${fonts_dir}"
 fi
 
-URL=$(wget -q -O - https://api.github.com/repos/ryanoasis/nerd-fonts/releases/latest | grep 'browser_download_url.*JetBrainsMono.zip' | awk -F'"' '{print $4}')
+URL=$(curl -s "https://api.github.com/repos/ryanoasis/nerd-fonts/releases/latest" |
+  jq -r '.assets[] | select(.name == "JetBrainsMono.zip") | .browser_download_url')
 
 if [ -z "$URL" ]; then
   echo "Error: Could not find JetBrainsMono.zip in the latest Nerd Fonts release."
