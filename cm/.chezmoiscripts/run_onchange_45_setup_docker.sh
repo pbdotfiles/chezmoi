@@ -1,55 +1,66 @@
 #!/bin/bash
 set -euo pipefail
 
-echo "🐳 Starting Docker installation..."
+# Check if Docker is already installed to avoid redundant work
+if ! command -v docker &>/dev/null; then
+  echo "🐳 Docker not found. Starting installation..."
 
-# 1. Clean up old versions (if any)
-echo "Removing conflicting packages..."
-for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do
-  sudo apt-get remove -y $pkg || true
-done
+  # 1. Clean up old versions
+  echo "Removing conflicting packages..."
+  for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do
+    sudo apt-get remove -y $pkg || true
+  done
 
-# 2. Update and install prerequisites
-echo "Installing prerequisites..."
-sudo apt-get update
-sudo apt-get install -y ca-certificates curl gnupg
+  # 2. Update and install prerequisites
+  echo "Installing prerequisites..."
+  sudo apt-get update
+  sudo apt-get install -y ca-certificates curl gnupg
 
-# 3. Add Docker's official GPG key
-echo "Adding Docker GPG key..."
-sudo install -m 0755 -d /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg --yes
-sudo chmod a+r /etc/apt/keyrings/docker.gpg
+  # 3. Add Docker's official GPG key (Only if missing)
+  if [ ! -f /etc/apt/keyrings/docker.gpg ]; then
+    echo "Adding Docker GPG key..."
+    sudo install -m 0755 -d /etc/apt/keyrings
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg --yes
+    sudo chmod a+r /etc/apt/keyrings/docker.gpg
+  else
+    echo "Docker GPG key already exists."
+  fi
 
-# 4. Set up the repository
-# Note: Handles Linux Mint by using UBUNTU_CODENAME if available, otherwise falls back to standard lsb_release
-echo "Setting up Docker repository..."
-if [ -f /etc/os-release ]; then
-  . /etc/os-release
-  VERSION_CODENAME=${UBUNTU_CODENAME:-$VERSION_CODENAME}
+  # 4. Set up the repository
+  echo "Setting up Docker repository..."
+  if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    VERSION_CODENAME=${UBUNTU_CODENAME:-$VERSION_CODENAME}
+  fi
+
+  echo \
+    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+        $VERSION_CODENAME stable" |
+    sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
+
+  # 5. Install Docker packages
+  echo "Installing Docker Engine and Compose..."
+  sudo apt-get update
+  sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+else
+  echo "✅ Docker is already installed. Skipping installation steps."
 fi
 
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-  $VERSION_CODENAME stable" |
-  sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
-
-# 5. Install Docker packages
-echo "Installing Docker Engine and Compose..."
-sudo apt-get update
-sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-
-# 6. Post-installation steps (Rootless mode)
-echo "Configuring user permissions..."
-# Create docker group if it doesn't exist
-sudo groupadd docker || true
-# Add current user to the docker group
-sudo usermod -aG docker "$USER"
+# 6. Post-installation steps
+if ! groups "$USER" | grep -q "\bdocker\b"; then
+  echo "Configuring user permissions..."
+  sudo groupadd docker || true
+  sudo usermod -aG docker "$USER"
+  echo "User added to docker group."
+else
+  echo "User is already in the docker group."
+fi
 
 # 7. Enable and start service
-echo "Enabling Docker service..."
+echo "Ensuring Docker service is active..."
 sudo systemctl enable docker.service
 sudo systemctl enable containerd.service
 sudo systemctl start docker
 
-echo "✅ Docker installation complete!"
-echo "Reboot, then test it with: docker run hello-world"
+echo "✅ Docker setup complete!"
