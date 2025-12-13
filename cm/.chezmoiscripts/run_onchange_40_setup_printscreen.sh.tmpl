@@ -13,7 +13,7 @@ gsettings set org.cinnamon.desktop.keybindings custom-list \
 
 # 3. Configure the Flameshot details using the 'Schema:Path' syntax
 gsettings set "${SCHEMA}:${PATH_ID}" name "Flameshot"
-gsettings set "${SCHEMA}:${PATH_ID}" command "flameshot gui --clipboard --path /home/paul/Pictures"
+gsettings set "${SCHEMA}:${PATH_ID}" command "flameshot gui --clipboard --path {{ .chezmoi.homeDir }}/Pictures"
 gsettings set "${SCHEMA}:${PATH_ID}" binding "['Print']"
 
 # 4. Unbind the default screenshot action so it doesn't conflict
