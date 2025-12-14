@@ -2,6 +2,9 @@
 
 set -euo pipefail
 
+{{ include ".chezmoitemplates/sudo_keepalive" }}
+sudo_keepalive
+
 sudo apt update
 
 PACKAGES=(

@@ -1,0 +1,17 @@
+# Function to keep sudo timestamp alive in the background
+sudo_keepalive() {
+    # 1. Ask for password upfront
+    sudo -v
+
+    # 2. Loop in background to update timestamp
+    while true; do
+        sudo -n true
+        sleep 60
+        # Kill this loop if the parent script (PID $$) dies
+        kill -0 "$$" || exit
+    done 2>/dev/null &
+
+    # 3. Capture PID and set trap to clean up on exit
+    SUDO_PID=$!
+    trap 'kill "$SUDO_PID" 2>/dev/null' EXIT
+}
