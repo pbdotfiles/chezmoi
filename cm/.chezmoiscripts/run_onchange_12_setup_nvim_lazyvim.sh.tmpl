@@ -184,7 +184,7 @@ mkdir -p "$CONFIG_DIR"
 #    This preserves your Chezmoi files (lua/config/keymaps.lua, etc)
 #    while filling in the rest of the LazyVim structure.
 echo "🔄 Merging LazyVim starter with your dotfiles..."
-cp -rn "$TEMP_DIR/." "$CONFIG_DIR/" || true
+cp -r --update=none "$TEMP_DIR/." "$CONFIG_DIR/" || true
 
 # Cleanup
 rm -rf "$TEMP_DIR"
