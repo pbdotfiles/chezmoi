@@ -1,6 +1,7 @@
 export PATH="$HOME/.local/bin:$HOME/bin:$PATH"
 
-# eval "$(starship init bash)" # probably useless because it's appended by starship during setup ?
+eval "$(starship init bash)"
+eval "$(fzf --bash)"
 
 {{- $features := dig .chezmoi.hostname (dict) .hosts_features -}}
 
@@ -25,7 +26,3 @@ HISTFILESIZE=100000
 shopt -s histappend
 PROMPT_COMMAND="history -a; history -c; history -r; $PROMPT_COMMAND"
 
-# Setup fzf
-if [ -f "$HOME/.fzf.bash" ]; then
-    source "$HOME/.fzf.bash"
-fi
