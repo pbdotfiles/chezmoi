@@ -1,0 +1,162 @@
+#!/bin/bash
+
+set -euo pipefail
+
+{{ include ".chezmoitemplates/sudo_keepalive" }}
+sudo_keepalive
+
+echo "======================================================="
+echo "  Setting up Neovim (Stable) + LazyVim + NVM  "
+echo "======================================================="
+
+# -----------------------------------------------------------------------------
+# 1. INSTALL DEPENDENCIES
+# -----------------------------------------------------------------------------
+
+# Ensure 'fd' is linked correctly (Ubuntu installs it as fdfind)
+mkdir -p "$HOME/.local/bin"
+if command -v fdfind >/dev/null 2>&1 && ! command -v fd >/dev/null 2>&1; then
+    echo "🔗 Symlinking fdfind to fd..."
+    ln -sf "$(command -v fdfind)" "$HOME/.local/bin/fd"
+fi
+
+echo "FZF installation..."
+# Remove apt-installed fzf if present (it's usually too old)
+if dpkg -l | grep -q "^ii.*fzf"; then
+    echo "⚠️  Found apt-installed fzf. Removing it to ensure latest version..."
+    sudo apt remove -y fzf
+fi
+# Install/Update FZF from Git
+if [ -d "$HOME/.fzf" ]; then
+    echo "🔄 Updating existing FZF..."
+    cd "$HOME/.fzf" && git pull && ./install --all --no-bash --no-zsh --no-fish
+else
+    echo "✨ Installing FZF (Fresh)..."
+    git clone --depth 1 https://github.com/junegunn/fzf.git "$HOME/.fzf"
+    "$HOME/.fzf/install" --all --no-bash --no-zsh --no-fish
+fi
+
+# Ensure the binary is symlinked to your user bin
+mkdir -p "$HOME/.local/bin"
+ln -sf "$HOME/.fzf/bin/fzf" "$HOME/.local/bin/fzf"
+
+echo "✅ FZF Setup Complete."
+
+#-------------------------------------------------------------------------------- 
+# 1.5 MAKE PYTHON VENV WITH PYNVIM
+#-------------------------------------------------------------------------------- 
+# We use a dedicated venv to avoid conflicts with system python or other projects
+NVIM_VENV="$HOME/.local/share/nvim/venv"
+
+if [ ! -d "$NVIM_VENV" ]; then
+    echo "🐍 Creating Python virtual environment for Neovim..."
+    python3 -m venv "$NVIM_VENV"
+    
+    echo "📦 Installing pynvim in dedicated venv..."
+    "$NVIM_VENV/bin/pip" install --upgrade pip pynvim
+else
+    echo "✅ Neovim Python venv already exists."
+    "$NVIM_VENV/bin/pip" install --upgrade pynvim
+fi
+
+# -----------------------------------------------------------------------------
+# 2. INSTALL NVM & NODE.JS (LTS)
+# -----------------------------------------------------------------------------
+export NVM_DIR="$HOME/.nvm"
+
+if [ ! -d "$NVM_DIR" ]; then
+    echo "🔍 Fetching latest NVM version..."
+    
+    # 1. Dynamically fetch the latest tag from GitHub API using jq
+    NVM_VERSION=$(curl -s https://api.github.com/repos/nvm-sh/nvm/releases/latest | jq -r '.tag_name')
+
+    if [ -z "$NVM_VERSION" ] || [ "$NVM_VERSION" == "null" ]; then
+        echo "❌ Error: Could not fetch NVM version. Defaulting to v0.39.7"
+        NVM_VERSION="v0.39.7"
+    fi
+
+    echo "Installing NVM ($NVM_VERSION)..."
+    curl -o- "https://raw.githubusercontent.com/nvm-sh/nvm/${NVM_VERSION}/install.sh" | bash
+else
+    echo "✅ NVM already installed."
+fi
+
+# Load NVM for this session
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+
+echo "🟢 Installing Node.js LTS..."
+nvm install --lts
+nvm use --lts
+nvm alias default 'lts/*'
+
+# Install core global tools for Neovim
+echo "📦 Installing global npm packages for Neovim..."
+npm install -g neovim tree-sitter-cli
+
+# -----------------------------------------------------------------------------
+# 3. INSTALL NEOVIM (LATEST STABLE BINARY)
+# -----------------------------------------------------------------------------
+# Uses the binary tarball to avoid AppImage FUSE issues and startup lag.
+
+NVIM_INSTALL_PATH="$HOME/.local/share/nvim-linux-x86_64"
+BIN_DIR="$HOME/bin"
+mkdir -p "$BIN_DIR"
+
+echo "📥 Fetching Neovim Stable..."
+# Removing old install to ensure clean update
+rm -rf "$NVIM_INSTALL_PATH"
+rm -rf "$HOME/.local/share/nvim-linux64"
+
+# Download Stable Tarball
+curl -LO https://github.com/neovim/neovim/releases/download/stable/nvim-linux-x86_64.tar.gz
+
+# Extract
+tar -xzf nvim-linux-x86_64.tar.gz -C "$HOME/.local/share/"
+rm nvim-linux-x86_64.tar.gz
+
+# Link binary
+ln -sf "$NVIM_INSTALL_PATH/bin/nvim" "$BIN_DIR/nvim"
+
+echo "✅ Neovim Stable installed to $BIN_DIR/nvim"
+"$BIN_DIR/nvim" --version | head -n 1
+
+# -----------------------------------------------------------------------------
+# 4. CONFIGURATION MERGE (LAZYVIM + CHEZMOI)
+# -----------------------------------------------------------------------------
+# Strategy: Download LazyVim starter to temp, then copy ONLY MISSING files
+# to ~/.config/nvim. This respects your Chezmoi dotfiles while ensuring
+# the full LazyVim environment exists.
+
+CONFIG_DIR="$HOME/.config/nvim"
+
+echo "🎨 Bootstrapping LazyVim Config..."
+
+# 1. Create a clean temp version of LazyVim starter
+TEMP_DIR=$(mktemp -d)
+git clone --depth 1 https://github.com/LazyVim/starter "$TEMP_DIR"
+rm -rf "$TEMP_DIR/.git"
+
+# 2. Ensure Config Dir exists
+mkdir -p "$CONFIG_DIR"
+
+# 3. Merge: Copy files from Starter -> Config, but DO NOT overwrite existing ones.
+#    This preserves your Chezmoi files (lua/config/keymaps.lua, etc)
+#    while filling in the rest of the LazyVim structure.
+echo "🔄 Merging LazyVim starter with your dotfiles..."
+cp -rn "$TEMP_DIR/." "$CONFIG_DIR/" || true
+
+# Cleanup
+rm -rf "$TEMP_DIR"
+
+echo "✅ Configuration merged."
+echo "   - Your dotfiles: PRESERVED"
+echo "   - Missing LazyVim files: ADDED"
+
+# -----------------------------------------------------------------------------
+# 5. FINALIZATION
+# -----------------------------------------------------------------------------
+# Ensure PATH is correct for current session
+export PATH="$BIN_DIR:$PATH"
+
+echo "🎉 Setup Complete! Restart your shell."
+echo "   Run 'nvim' to finish plugin installation."

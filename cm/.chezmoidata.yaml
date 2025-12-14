@@ -31,7 +31,7 @@ hosts_features:
     setup_server: true
     setup_wireguard: false
     setup_nvidia: false
-    setup_smb_share: true
+    setup_smb_share: false
 
   morefine:
     setup_gui: true
@@ -49,7 +49,7 @@ hosts_features:
     setup_conda: true
     setup_docker: true
   
-  vmunbuntuserver:
+  vmubuntuserver:
     setup_gui: false
     setup_server: true
     setup_wireguard: false

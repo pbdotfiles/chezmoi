@@ -4,3 +4,7 @@
 
 -- The setting below is necessary so that we can activate mini.files in ~/.config/nvim/lua/plugins/extras.lua
 vim.g.lazyvim_check_order = false
+
+-- Force Neovim to use a stable, isolated Python virtual environment
+-- This prevents 'checkhealth' errors when system Python packages are too old
+vim.g.python3_host_prog = vim.fn.expand("~/.local/share/nvim/venv/bin/python")

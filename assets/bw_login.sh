@@ -1,5 +1,3 @@
-#!/bin/bash
-
 BW_CMD="$HOME/bin/bw"
 
 # Check the Bitwarden status
