@@ -13,6 +13,12 @@ prepare_mount_point() {
     if mountpoint -q "$dir"; then
         echo "⚠️  Drive currently mounted at $dir. Unmounting to configure mount point..."
         sudo umount "$dir"
+        
+        # SAFETY CHECK: If unmount failed (busy), STOP immediately.
+        if mountpoint -q "$dir"; then
+            echo "❌ CRITICAL: Failed to unmount $dir. Target busy. Aborting to protect data."
+            exit 1
+        fi
     fi
 
     if [ ! -d "$dir" ]; then
@@ -21,8 +27,12 @@ prepare_mount_point() {
     fi
 
     # Unlock, set owner, then Lock
-    sudo chattr -i "$dir"
-    sudo chown -R "$owner" "$dir"
+    # We add '|| true' so it doesn't fail on a fresh directory where the attr isn't set yet
+    sudo chattr -i "$dir" 2>/dev/null || true
+    
+    sudo chown "$owner:$owner" "$dir"
+    sudo chmod 755 "$dir"
+
     sudo chattr +i "$dir"
     echo "Mount point $dir prepared and locked."
 }
