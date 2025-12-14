@@ -100,6 +100,41 @@ echo "📦 Installing global npm packages for Neovim..."
 npm install -g neovim tree-sitter-cli
 
 # -----------------------------------------------------------------------------
+# 2.5 INSTALL LAZYGIT
+# -----------------------------------------------------------------------------
+
+# Define install location matching your other binaries
+BIN_DIR="$HOME/bin"
+mkdir -p "$BIN_DIR"
+
+# Check if lazygit is installed
+if command -v lazygit &> /dev/null; then
+    echo "Lazygit is already installed."
+    # Optional: You could add version checking logic here to force updates
+    # For now, we'll assume if it exists, it's fine.
+else
+    echo "⬇️  Installing Lazygit (Latest)..."
+    
+    # Get the latest release version tag from GitHub API
+    LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": "v\K[^"]*')
+    
+    echo "Detected version: ${LAZYGIT_VERSION}"
+
+    # Download the tarball
+    curl -Lo lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz"
+
+    # Extract just the binary
+    tar xf lazygit.tar.gz lazygit
+
+    # Install to bin
+    install lazygit "$BIN_DIR"
+
+    # Cleanup
+    rm lazygit.tar.gz lazygit
+    
+    echo "✅ Lazygit installed to $BIN_DIR/lazygit"
+fi
+# -----------------------------------------------------------------------------
 # 3. INSTALL NEOVIM (LATEST STABLE BINARY)
 # -----------------------------------------------------------------------------
 # Uses the binary tarball to avoid AppImage FUSE issues and startup lag.
