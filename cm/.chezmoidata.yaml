@@ -2,7 +2,7 @@
 # HOST FEATURES
 # =============================================================================
 # setup_gui:          Installs Cinnamon, Brave, PyCharm, Fonts, etc.
-# setup_server_utils: Installs UFW, Cockpit, Unattended Upgrades, etc.
+# setup_server: Installs UFW, Cockpit, Unattended Upgrades, etc.
 # setup_wireguard:    Installs Wireguard package and wg0.conf
 # setup_nvidia:       Installs proprietary NVIDIA drivers and tools
 # setup_smb_share:    Mounts the specific 'minis' Samba share
