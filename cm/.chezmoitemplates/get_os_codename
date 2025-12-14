@@ -1,0 +1,20 @@
+# Detects the OS Codename (e.g. 'noble', 'jammy')
+# Compatible with Ubuntu and Linux Mint (uses UBUNTU_CODENAME if present)
+
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    # Mint uses UBUNTU_CODENAME to point to the upstream base
+    # Standard Ubuntu uses VERSION_CODENAME
+    CODENAME=${UBUNTU_CODENAME:-$VERSION_CODENAME}
+    
+    if [ -z "$CODENAME" ]; then
+        echo "❌ Error: Could not determine OS codename from /etc/os-release"
+        exit 1
+    fi
+else
+    echo "❌ Error: /etc/os-release file not found."
+    exit 1
+fi
+
+# Export it so subshells *can* see it if needed, though usually strict inclusion is enough
+export CODENAME
