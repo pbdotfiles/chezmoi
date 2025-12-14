@@ -13,7 +13,7 @@ if [ -z "$HDIDLE_URL" ]; then
 fi
 
 wget -q -O hd-idle.deb "$HDIDLE_URL"
-sudo dpkg -i hd-idle.deb
+sudo apt install -y ./hd-idle.deb
 rm hd-idle.deb
 
 sudo perl -pi -e 's/^.*START_HD_IDLE=.*$/START_HD_IDLE=true/' /etc/default/hd-idle
