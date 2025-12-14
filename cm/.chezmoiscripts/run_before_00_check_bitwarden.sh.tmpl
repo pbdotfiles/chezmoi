@@ -1,5 +1,7 @@
 #!/bin/bash
 
+{{ include ".chezmoitemplates/pause_on_error" }}
+
 # 1. Check if 'bw' is even installed
 if ! command -v bw &>/dev/null; then
   echo "❌ ERROR: Bitwarden CLI ('bw') is not installed or not in your PATH."

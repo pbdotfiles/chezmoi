@@ -9,6 +9,11 @@ System setup and dotfiles using [`chezmoi`](https://www.chezmoi.io/)
 3. Setup Bitwarden: `source ~/.local/share/chezmoi/assets/bw_setup.sh`
 4. Run `~/bin/chezmoi apply`
 
+sh -c "$(curl -fsLS get.chezmoi.io)"
+~/bin/chezmoi init https://github.com/pbdotfiles/chezmoi.git
+source ~/.local/share/chezmoi/assets/bw_setup.sh
+~/bin/chezmoi apply
+
 ## Updating the configuration:
 
 1. Log in Bitwarden: `source ~/.local/share/chezmoi/assets/bw_login.sh`

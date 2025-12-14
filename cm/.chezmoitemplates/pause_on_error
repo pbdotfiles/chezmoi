@@ -1,0 +1,7 @@
+function pause_on_error() {
+    echo ""
+    echo "❌ Script failed on line $1."
+    echo "Press [Enter] to exit..."
+    read -r
+}
+trap 'pause_on_error $LINENO' ERR

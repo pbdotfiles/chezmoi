@@ -1,5 +1,7 @@
 #!/bin/bash
 
+{{ include ".chezmoitemplates/pause_on_error" }}
+
 set -euo pipefail
 
 sudo apt install unattended-upgrades update-notifier-common ufw cockpit -y

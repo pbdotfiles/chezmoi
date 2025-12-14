@@ -1,5 +1,7 @@
 #!/bin/bash
 
+{{ include ".chezmoitemplates/pause_on_error" }}
+
 set -euo pipefail
 
 {{ include ".chezmoitemplates/sudo_keepalive" }}
@@ -81,6 +83,8 @@ else
     echo "✅ NVM already installed."
 fi
 
+set +u # disable strict variable checking for NVM
+
 # Load NVM for this session
 [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
 
@@ -88,6 +92,8 @@ echo "🟢 Installing Node.js LTS..."
 nvm install --lts
 nvm use --lts
 nvm alias default 'lts/*'
+
+set -u # re-enable strict variable checking
 
 # Install core global tools for Neovim
 echo "📦 Installing global npm packages for Neovim..."
