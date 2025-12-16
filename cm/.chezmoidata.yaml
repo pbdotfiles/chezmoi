@@ -22,8 +22,8 @@ hosts_features:
     setup_gui: true
     setup_server: false 
     setup_wireguard: false
-    setup_nvidia: true
-    setup_smb_share: false
+    setup_nvidia: false
+    setup_smb_share: true
     setup_conda: true
 
   minis:
