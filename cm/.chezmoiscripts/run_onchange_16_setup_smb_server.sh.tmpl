@@ -1,0 +1,41 @@
+#!/bin/bash
+
+{{ include ".chezmoitemplates/pause_on_error" }}
+
+set -euo pipefail
+
+echo "🌐 Configuring Samba Server shares for {{ .chezmoi.hostname }}..."
+
+# 1. Install Samba
+sudo apt update && sudo apt install -y samba
+
+SMB_CONF="/etc/samba/smb.conf"
+TEMP_CONF=$(mktemp)
+MARKER="# --- Managed by Chezmoi ---"
+
+# 2. Backup current config to temp
+sudo cp "$SMB_CONF" "$TEMP_CONF"
+
+# 3. Clean up existing custom shares to prevent duplicates.
+sudo sed -i "\|$MARKER|,\$d" "$TEMP_CONF"
+
+# 4. Append the configuration directly
+cat <<EOF | sudo tee -a "$TEMP_CONF" > /dev/null
+$MARKER
+[share]
+  path = /mnt/mx500_4t
+  valid users = paul
+  browseable = yes
+  read only = no
+  guest ok = no
+  create mask = 0775
+  directory mask = 0775
+  force user = paul
+EOF
+
+# 5. Apply the configuration and restart service
+sudo cp "$TEMP_CONF" "$SMB_CONF"
+sudo systemctl restart smbd
+rm "$TEMP_CONF"
+
+echo "✅ Samba shares applied successfully."
