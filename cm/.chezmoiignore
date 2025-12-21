@@ -1,5 +1,5 @@
 # -----------------------------------------------------------------------------
-# 1. LOAD HOST-SPECIFIC FEATURES
+# LOAD HOST-SPECIFIC FEATURES
 # -----------------------------------------------------------------------------
 {{- $features := dig .chezmoi.hostname (dict) .hosts_features -}}
 
@@ -54,6 +54,11 @@
 # If this machine does NOT need docker:
 {{- if not (dig "setup_docker" false $features) }}
 **/*setup_docker*
+{{- end }}
+
+# If this machine does NOT need to setup the SMB server
+{{- if not (dig "setup_smb_server" false $features) }}
+**/*setup_smb_server*
 {{- end }}
 # Never ignore those:
 # ssh_copy_id_all

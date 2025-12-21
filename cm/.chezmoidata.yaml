@@ -28,15 +28,6 @@ hosts_features:
     setup_smb_share: true
     setup_conda: true
 
-  minis:
-    setup_gui: false
-    setup_server: true
-    setup_wireguard: false
-    setup_nvidia: false
-    setup_smb_share: false
-    setup_conda: true
-    setup_docker: true
-
   morefine:
     setup_gui: true
     setup_server: false
@@ -55,12 +46,23 @@ hosts_features:
     setup_conda: true
     setup_docker: true
   
+  minis:
+    setup_gui: false
+    setup_server: true
+    setup_wireguard: false
+    setup_nvidia: false
+    setup_smb_share: false
+    setup_smb_server: true
+    setup_conda: true
+    setup_docker: true
+
   vmubuntuserver:
     setup_gui: false
     setup_server: true
     setup_wireguard: false
     setup_nvidia: false
     setup_smb_share: false
+    setup_smb_server: true
     setup_conda: true
     setup_docker: true
 
