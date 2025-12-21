@@ -34,6 +34,8 @@ hosts_features:
     setup_wireguard: false
     setup_nvidia: false
     setup_smb_share: false
+    setup_conda: true
+    setup_docker: true
 
   morefine:
     setup_gui: true
@@ -59,7 +61,7 @@ hosts_features:
     setup_wireguard: false
     setup_nvidia: false
     setup_smb_share: false
-    setup_hd_idle: false
+    setup_conda: true
     setup_docker: true
 
 local_storage:
