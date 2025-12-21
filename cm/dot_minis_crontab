@@ -1,0 +1,10 @@
+# ===============================================================
+# This file is managed by CHEZMOI.
+#
+# The file is loaded with 
+# `crontab ~/.minis_crontab`
+# ===============================================================
+
+47 2 */3 * * export BORG_PASSPHRASE=$(cat ~/.borg/passphrase) && borg prune --list --stats --keep-daily=7 --keep-weekly=4 --keep-monthly=6 --keep-yearly=5 ronewg:/mnt/wdd/borgrepo ; borg create ronewg:/mnt/wdd/borgrepo::{now} /mnt/mx500_4t -v --progress --compression zstd 
+55 3 *   * * export BORG_PASSPHRASE=$(cat ~/.borg/passphrase) && borg prune --list --stats --keep-daily=7 --keep-weekly=4 --keep-monthly=6 --keep-yearly=5 /mnt/mx500_2t/borgbackup ; borg create /mnt/mx500_2t/borgbackup::{now} /mnt/mx500_4t/backuped_data/ -v --progress --compression zstd
+

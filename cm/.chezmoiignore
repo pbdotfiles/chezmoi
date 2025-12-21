@@ -60,6 +60,14 @@
 {{- if not (dig "setup_smb_server" false $features) }}
 **/*setup_smb_server*
 {{- end }}
+
+# If this machine does NOT need to do minis-specific setup
+{{- if not (dig "setup_minis_specific" false $features) }}
+**/.borg/passphrase
+**/.minis_crontab**
+**/*install_minis_cron**
+{{- end }}
+
 # Never ignore those:
 # ssh_copy_id_all
 # check_bitwarden

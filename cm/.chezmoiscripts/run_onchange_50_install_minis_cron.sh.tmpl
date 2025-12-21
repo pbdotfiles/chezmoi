@@ -1,0 +1,16 @@
+#!/bin/bash
+
+{{ include ".chezmoitemplates/pause_on_error" }}
+
+# Trigger if the crontab source file changes
+# minis_crontab hash: {{ include "dot_minis_crontab.tmpl" | sha256sum }}
+
+echo "⏰ Updating system crontab from ~/.minis_crontab..."
+
+if [ -f "$HOME/.minis_crontab" ]; then
+    crontab "$HOME/.minis_crontab"
+    echo "✅ System crontab updated successfully."
+else
+    echo "❌ Error: ~/.minis_crontab not found."
+    exit 1
+fi
