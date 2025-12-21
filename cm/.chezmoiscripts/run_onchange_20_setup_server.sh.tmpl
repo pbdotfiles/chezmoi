@@ -4,11 +4,18 @@
 
 set -euo pipefail
 
+echo "🔧 Installing server-specific apt packages..."
 sudo apt install unattended-upgrades update-notifier-common ufw cockpit -y
 
+echo "🔧 Configuring unattended-upgrades..."
 sudo perl -pi -e 's/^.*Unattended-Upgrade::Automatic-Reboot .*$/Unattended-Upgrade::Automatic-Reboot "true";/' /etc/apt/apt.conf.d/50unattended-upgrades
 sudo perl -pi -e 's/^.*Unattended-Upgrade::Automatic-Reboot-Time .*$/Unattended-Upgrade::Automatic-Reboot-Time "23:00";/' /etc/apt/apt.conf.d/50unattended-upgrades
 
+echo "🔧 Configuring ufw firewall..."
 sudo ufw allow ssh
 sudo ufw allow Samba
 sudo ufw enable
+
+echo "🔧 Disabling sleep and suspend features..."
+sudo systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
+
