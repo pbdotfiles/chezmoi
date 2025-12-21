@@ -6,6 +6,8 @@
 # setup_wireguard:    Installs Wireguard package and wg0.conf
 # setup_nvidia:       Installs proprietary NVIDIA drivers and tools
 # setup_smb_share:    Mounts the specific 'minis' Samba share
+# setup_docker:
+# setup_conda:
 # =============================================================================
 
 hosts_features:
@@ -38,7 +40,9 @@ hosts_features:
     setup_server: false
     setup_wireguard: false
     setup_nvidia: false
-    setup_smb_share: false
+    setup_smb_share: true
+    setup_conda: true
+    setup_docker: true
 
   mintvm:
     setup_gui: true
