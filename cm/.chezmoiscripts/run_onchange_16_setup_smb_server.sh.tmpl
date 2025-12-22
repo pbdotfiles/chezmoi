@@ -38,4 +38,10 @@ sudo cp "$TEMP_CONF" "$SMB_CONF"
 sudo systemctl restart smbd
 rm "$TEMP_CONF"
 
+# 6. Setup the sambapassword for user "paul"
+sudo smbpasswd -s -a paul <<EOF
+{{ (bitwardenFields "item" "Home_network").Samba_share_password.value }}
+{{ (bitwardenFields "item" "Home_network").Samba_share_password.value }}
+EOF
+
 echo "✅ Samba shares applied successfully."
