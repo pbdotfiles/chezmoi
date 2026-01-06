@@ -27,6 +27,7 @@ hosts_features:
     setup_nvidia: false
     setup_smb_share: true
     setup_conda: true
+    setup_nfs_share: true
 
   morefine:
     setup_gui: true
