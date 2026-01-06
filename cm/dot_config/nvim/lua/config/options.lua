@@ -8,3 +8,5 @@ vim.g.lazyvim_check_order = false
 -- Force Neovim to use a stable, isolated Python virtual environment
 -- This prevents 'checkhealth' errors when system Python packages are too old
 vim.g.python3_host_prog = vim.fn.expand("~/.local/share/nvim/venv/bin/python")
+
+vim.opt.spell = false -- Disable spell checking globally
