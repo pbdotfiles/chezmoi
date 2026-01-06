@@ -26,6 +26,10 @@ username={{ .chezmoi.username }}
 password={{ (bitwardenFields "item" "Home_network").Samba_share_password.value }}
 EOF
 
+# 2.5 Stop existing systemd units to prevent "Target Busy" errors
+echo "Stopping existing systemd units to release locks..."
+sudo systemctl stop "$AUTOMOUNT_UNIT" "$MOUNT_UNIT" 2>/dev/null || true
+
 # 3. Prepare Mount Point
 prepare_mount_point "$MOUNT_POINT" "{{ .chezmoi.username }}"
 
