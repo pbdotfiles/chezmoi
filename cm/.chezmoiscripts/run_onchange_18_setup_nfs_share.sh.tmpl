@@ -1,0 +1,86 @@
+#!/bin/bash
+
+{{ include ".chezmoitemplates/pause_on_error" }}
+
+set -euo pipefail
+
+{{ include ".chezmoitemplates/filesystem_utils" }}
+
+# --- Configuration ---
+# Assuming 'minis' resolves in your /etc/hosts or DNS. 
+# If not, you might need the IP address here.
+SHARE_REMOTE="minis:/mnt/mx500_4t"
+MOUNT_POINT="/mnt/minis_nfs"
+
+# Use systemd-escape to generate the unit name
+MOUNT_UNIT=$(systemd-escape --path --suffix=mount "$MOUNT_POINT")
+AUTOMOUNT_UNIT=$(systemd-escape --path --suffix=automount "$MOUNT_POINT")
+
+echo "Configuring NFS Share: $SHARE_REMOTE -> $MOUNT_POINT"
+
+# 1. Clean Legacy Configs
+clean_legacy_fstab "$SHARE_REMOTE" "$MOUNT_POINT"
+
+# 1.5 Stop existing systemd units to prevent "Target Busy" errors
+if systemctl is-active --quiet "$AUTOMOUNT_UNIT" || systemctl is-active --quiet "$MOUNT_UNIT"; then
+    echo "Stopping active systemd units to release locks..."
+    sudo systemctl stop "$AUTOMOUNT_UNIT" "$MOUNT_UNIT"
+fi
+
+# 2. Prepare Mount Point
+# Note: NFS doesn't use credentials files; auth is IP-based (configured on server)
+prepare_mount_point "$MOUNT_POINT" "{{ .chezmoi.username }}"
+
+# 3. Create the .mount Unit
+echo "Creating Systemd Mount Unit: $MOUNT_UNIT"
+cat <<EOF | sudo install -m 644 /dev/stdin "/etc/systemd/system/$MOUNT_UNIT"
+[Unit]
+Description=Mount NFS Share at $MOUNT_POINT
+Documentation=man:systemd.mount(5)
+After=network-online.target
+Wants=network-online.target
+
+[Mount]
+What=$SHARE_REMOTE
+Where=$MOUNT_POINT
+Type=nfs
+# Options explanation:
+# rw: Read/Write
+# soft: Fail after timeout (prevents hard freeze if server dies)
+# timeo=100: Timeout in deciseconds (10s)
+# retrans=2: Number of retries
+# actimeo=0: DISABLES ATTRIBUTE CACHING (Critical for Neovim "file changed" fix)
+Options=rw,soft,timeo=100,retrans=2,actimeo=0
+TimeoutSec=10
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# 4. Create the .automount Unit
+echo "Creating Systemd Automount Unit: $AUTOMOUNT_UNIT"
+cat <<EOF | sudo install -m 644 /dev/stdin "/etc/systemd/system/$AUTOMOUNT_UNIT"
+[Unit]
+Description=Automount NFS Share at $MOUNT_POINT
+Documentation=man:systemd.automount(5)
+
+[Automount]
+Where=$MOUNT_POINT
+TimeoutIdleSec=300
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# 5. Enable and Start
+echo "Reloading systemd and enabling automount..."
+sudo systemctl daemon-reload
+sudo systemctl enable --now "$AUTOMOUNT_UNIT"
+sudo systemctl disable --now "$MOUNT_UNIT"
+
+# Restarting to apply changes if already active
+if systemctl is-active --quiet "$MOUNT_UNIT"; then
+    sudo systemctl restart "$MOUNT_UNIT"
+fi
+
+echo "✅ NFS Share configured via Systemd Automount."

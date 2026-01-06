@@ -34,6 +34,7 @@ hosts_features:
     setup_wireguard: false
     setup_nvidia: false
     setup_smb_share: true
+    setup_nfs_share: true
     setup_conda: true
     setup_docker: true
 
@@ -53,6 +54,8 @@ hosts_features:
     setup_nvidia: false
     setup_smb_share: false
     setup_smb_server: true
+    setup_nfs_share: false
+    setup_nfs_server: true
     setup_conda: true
     setup_docker: true
     setup_minis_specific: true

@@ -1,0 +1,40 @@
+#!/bin/bash
+
+{{ include ".chezmoitemplates/pause_on_error" }}
+
+set -euo pipefail
+
+echo "🌐 Configuring NFS Server for {{ .chezmoi.hostname }}..."
+
+# 1. Install NFS Server
+sudo apt update && sudo apt install -y nfs-kernel-server
+
+EXPORTS_FILE="/etc/exports"
+TEMP_EXPORTS=$(mktemp)
+MARKER="# --- Managed by Chezmoi ---"
+SHARE_PATH="/mnt/mx500_4t"
+
+# 2. Backup current config
+sudo cp "$EXPORTS_FILE" "$TEMP_EXPORTS"
+
+# 3. Clean up existing custom shares
+sudo sed -i "\|$MARKER|,\$d" "$TEMP_EXPORTS"
+
+# 4. Append configuration
+# anonuid/anongid 1000 assumes 'paul' is 1000 on both server and client.
+# insecure allows ports > 1024 (often needed for macOS clients, harmless for Linux)
+# no_subtree_check improves performance.
+cat <<EOF | sudo tee -a "$TEMP_EXPORTS" > /dev/null
+$MARKER
+$SHARE_PATH  192.168.0.0/16(rw,sync,no_subtree_check,all_squash,anonuid=$(id -u),anongid=$(id -g))
+EOF
+
+# 5. Apply configuration
+sudo cp "$TEMP_EXPORTS" "$EXPORTS_FILE"
+rm "$TEMP_EXPORTS"
+
+# 6. Export shares and restart
+sudo exportfs -ra
+sudo systemctl restart nfs-kernel-server
+
+echo "✅ NFS Server configured."

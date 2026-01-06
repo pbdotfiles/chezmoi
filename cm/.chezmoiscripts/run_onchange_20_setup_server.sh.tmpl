@@ -14,6 +14,7 @@ sudo perl -pi -e 's/^.*Unattended-Upgrade::Automatic-Reboot-Time .*$/Unattended-
 echo "🔧 Configuring ufw firewall..."
 sudo ufw allow ssh
 sudo ufw allow Samba
+sudo ufw allow nfs
 sudo ufw enable
 
 echo "🔧 Disabling sleep and suspend features..."

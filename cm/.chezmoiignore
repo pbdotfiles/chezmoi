@@ -41,11 +41,6 @@
 **/*setup_nvidia*
 {{- end }}
 
-# If this machine does NOT need to configure the SMB share:
-{{- if not (dig "setup_smb_share" false $features) }}
-**/*setup_smb_share*
-{{- end }}
-
 # If this machine does NOT need hdidle:
 {{- if not (dig "setup_hd_idle" false $features) }}
 **/*setup_hd_idle*
@@ -56,9 +51,24 @@
 **/*setup_docker*
 {{- end }}
 
+# If this machine does NOT need to configure the SMB share:
+{{- if not (dig "setup_smb_share" false $features) }}
+**/*setup_smb_share*
+{{- end }}
+
 # If this machine does NOT need to setup the SMB server
 {{- if not (dig "setup_smb_server" false $features) }}
 **/*setup_smb_server*
+{{- end }}
+
+# If this machine does NOT need to configure the NFS share:
+{{- if not (dig "setup_nfs_share" false $features) }}
+**/*setup_nfs_share*
+{{- end }}
+
+# If this machine does NOT need to setup the NFS server
+{{- if not (dig "setup_nfs_server" false $features) }}
+**/*setup_nfs_server*
 {{- end }}
 
 # If this machine does NOT need to do minis-specific setup
