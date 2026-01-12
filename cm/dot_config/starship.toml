@@ -1,0 +1,6 @@
+# Increase the timeout for scanning directory (in milliseconds)
+# Default is usually 30ms.
+scan_timeout = 100
+
+# Optional: You can also increase command_timeout if git status is slow
+# command_timeout = 100
