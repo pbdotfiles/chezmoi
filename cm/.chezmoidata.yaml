@@ -13,24 +13,29 @@
 hosts_features:
   rone:
     setup_gui: false
+    setup_fonts: false
     setup_server: true
     setup_wireguard: true
     setup_nvidia: false
     setup_smb_share: false
     setup_hd_idle: true
+    has_bitwarden: true
 
 
   fractal:
     setup_gui: true
+    setup_fonts: true
     setup_server: false 
     setup_wireguard: false
     setup_nvidia: false
     setup_smb_share: true
     setup_conda: true
     setup_nfs_share: true
+    has_bitwarden: true
 
   morefine:
     setup_gui: true
+    setup_fonts: true
     setup_server: false
     setup_wireguard: false
     setup_nvidia: false
@@ -38,18 +43,22 @@ hosts_features:
     setup_nfs_share: true
     setup_conda: true
     setup_docker: true
+    has_bitwarden: true
 
   mintvm:
     setup_gui: true
+    setup_fonts: true
     setup_server: false
     setup_wireguard: false
     setup_nvidia: false
     setup_smb_share: true
     setup_conda: true
     setup_docker: true
+    has_bitwarden: true
   
   minis:
     setup_gui: false
+    setup_fonts: false
     setup_server: true
     setup_wireguard: false
     setup_nvidia: false
@@ -60,9 +69,11 @@ hosts_features:
     setup_conda: true
     setup_docker: true
     setup_minis_specific: true
+    has_bitwarden: true
 
   vmubuntuserver:
     setup_gui: false
+    setup_fonts: false
     setup_server: true
     setup_wireguard: false
     setup_nvidia: false
@@ -71,6 +82,20 @@ hosts_features:
     setup_conda: true
     setup_docker: true
     setup_minis_specific: true
+    has_bitwarden: true
+
+  ALFR-CY5VCK3-L:
+    setup_gui: false
+    setup_fonts: true
+    setup_server: false
+    setup_wireguard: false
+    setup_nvidia: false
+    setup_smb_share: false
+    setup_smb_server: false
+    setup_conda: true
+    setup_docker: true
+    setup_minis_specific: false
+    has_bitwarden: false
 
 local_storage:
   rone:

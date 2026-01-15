@@ -66,21 +66,26 @@ fi
 # -----------------------------------------------------------------------------
 export NVM_DIR="$HOME/.nvm"
 
+echo "🔍 Fetching latest NVM version..."
+NVM_VERSION=$(curl -s https://api.github.com/repos/nvm-sh/nvm/releases/latest | jq -r '.tag_name')
+
+if [ -z "$NVM_VERSION" ] || [ "$NVM_VERSION" == "null" ]; then
+    echo "❌ Error: Could not fetch NVM version. Defaulting to v0.40.3"
+    NVM_VERSION="v0.40.3"
+fi
+
 if [ ! -d "$NVM_DIR" ]; then
-    echo "🔍 Fetching latest NVM version..."
-    
-    # 1. Dynamically fetch the latest tag from GitHub API using jq
-    NVM_VERSION=$(curl -s https://api.github.com/repos/nvm-sh/nvm/releases/latest | jq -r '.tag_name')
-
-    if [ -z "$NVM_VERSION" ] || [ "$NVM_VERSION" == "null" ]; then
-        echo "❌ Error: Could not fetch NVM version. Defaulting to v0.39.7"
-        NVM_VERSION="v0.39.7"
-    fi
-
     echo "Installing NVM ($NVM_VERSION)..."
-    curl -o- "https://raw.githubusercontent.com/nvm-sh/nvm/${NVM_VERSION}/install.sh" | bash
+    git clone https://github.com/nvm-sh/nvm.git "$NVM_DIR"
+    cd "$NVM_DIR"
+    git checkout "$NVM_VERSION"
+    cd - > /dev/null
 else
-    echo "✅ NVM already installed."
+    echo "✅ NVM already installed. Checking for updates."
+    cd "$NVM_DIR"
+    git fetch --tags
+    git checkout "$NVM_VERSION"
+    cd - > /dev/null
 fi
 
 set +u # disable strict variable checking for NVM
@@ -93,11 +98,11 @@ nvm install --lts
 nvm use --lts
 nvm alias default 'lts/*'
 
-set -u # re-enable strict variable checking
-
 # Install core global tools for Neovim
 echo "📦 Installing global npm packages for Neovim..."
 npm install -g neovim tree-sitter-cli
+
+set -u # re-enable strict variable checking
 
 # -----------------------------------------------------------------------------
 # 2.5 INSTALL LAZYGIT

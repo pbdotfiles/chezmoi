@@ -17,6 +17,9 @@
 **/*cinnamon_fix*
 **/*setup_kitty_terminal*
 **/.config/kitty
+{{- end }}
+
+{{- if not (dig "setup_fonts" false $features) }}
 **/*install_fonts*
 {{- end }}
 
@@ -76,6 +79,13 @@
 **/.borg/passphrase
 **/.minis_crontab**
 **/*install_minis_cron**
+{{- end }}
+
+# If this machine does NOT have bitwarden:
+{{- if not (dig "has_bitwarden" false $features) }}
+**/*check_bitwarden*
+**/*ssh_copy_id_all*
+**/.git-credentials
 {{- end }}
 
 # Never ignore those:
