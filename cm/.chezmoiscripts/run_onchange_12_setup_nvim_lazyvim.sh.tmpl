@@ -91,12 +91,22 @@ fi
 set +u # disable strict variable checking for NVM
 
 # Load NVM for this session
-[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
 
 echo "🟢 Installing Node.js LTS..."
 nvm install --lts
 nvm use --lts
 nvm alias default 'lts/*'
+
+{{- if eq .chezmoi.hostname "ALFR-CY5VCK3-L" }}
+ZSCALER_CERT="/usr/local/share/ca-certificates/ZscalerRootCA.crt"
+export NODE_EXTRA_CA_CERTS="$ZSCALER_CERT"
+npm config set cafile "$ZSCALER_CERT"
+
+# Bypass remaining SSL checks and ensure we use NVM local paths
+npm config set strict-ssl false
+{{- end }}
 
 # Install core global tools for Neovim
 echo "📦 Installing global npm packages for Neovim..."

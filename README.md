@@ -27,3 +27,11 @@ Wireguard configuration:
 4. `sudo mv /tmp/wg0.conf /etc/wireguard/wg0.conf`
 5. `sudo chmod 600 /etc/wireguard/wg0.conf`
 
+## Work machine
+Must run these commands before anything:
+```bash
+sudo cp /mnt/c/Users/my_user_name/Documents/certificats/2026_01_certificats_that_worked_from_first_wsl_machine_unknown_source/* /usr/local/share/ca-certificates/
+sudo update-ca-certificates
+```
+
+```
