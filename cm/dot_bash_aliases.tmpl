@@ -1,3 +1,6 @@
+#---  Launch/Attach tmux automatically, but only if not already inside it
+tmux attach || tmux new -s main
+
 export PATH="$HOME/.local/bin:$HOME/bin:$PATH"
 
 export EDITOR="nvim"
@@ -29,12 +32,22 @@ HISTFILESIZE=100000
 shopt -s histappend
 PROMPT_COMMAND="history -a; history -c; history -r; $PROMPT_COMMAND"
 
-# NVM Configuration
+#---  NVM Configuration: lazy-loaded
 export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+_load_nvm() {
+    # Remove these stubs so they don't loop
+    unset -f nvm node npm npx
+    # Load NVM for real
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+}
+
+# Create "stubs" that load NVM only when called
+nvm()  { _load_nvm; nvm "$@"; }
+node() { _load_nvm; node "$@"; }
+npm()  { _load_nvm; npm "$@"; }
+npx()  { _load_nvm; npx "$@"; }
 
 {{- if eq .chezmoi.hostname "ALFR-CY5VCK3-L" }}
 export NODE_EXTRA_CA_CERTS="/usr/local/share/ca-certificates/ZscalerRootCA.crt"
-npm config set strict-ssl false
 {{- end }}
