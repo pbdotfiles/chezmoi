@@ -3,8 +3,8 @@
 if [ -z "$TMUX" ] && [ -n "$PS1" ]; then
     tmux attach || tmux new -s main
 fi
-export PATH="$HOME/.local/bin:$HOME/bin:$PATH"
 
+export PATH="$HOME/.local/bin:$HOME/bin:$PATH"
 export EDITOR="nvim"
 export VISUAL="nvim"
 
@@ -53,3 +53,18 @@ npx()  { _load_nvm; npx "$@"; }
 {{- if eq .chezmoi.hostname "ALFR-CY5VCK3-L" }}
 export NODE_EXTRA_CA_CERTS="/usr/local/share/ca-certificates/ZscalerRootCA.crt"
 {{- end }}
+
+#--- Add a "tempwork" command that creates a temporary directory that will be automatically deleted after exit.
+tempwork() {
+  local tdir
+  tdir=$(mktemp -d)
+  # Open a new sub-shell inside the temp directory
+  (
+    cd "$tdir" || return
+    echo "Entering temporary workspace: $tdir"
+    echo "This directory will be deleted when you type 'exit'."
+    $SHELL
+    rm -rf "$tdir"
+    echo "Workspace $tdir deleted."
+  )
+}
