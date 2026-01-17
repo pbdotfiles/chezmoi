@@ -172,6 +172,7 @@ rm nvim-linux-x86_64.tar.gz
 
 # Link binary
 ln -sf "$NVIM_INSTALL_PATH/bin/nvim" "$BIN_DIR/nvim"
+sudo ln -sf "$NVIM_INSTALL_PATH/bin/nvim" "/usr/local/bin/nvim"
 
 echo "✅ Neovim Stable installed to $BIN_DIR/nvim"
 "$BIN_DIR/nvim" --version | head -n 1
