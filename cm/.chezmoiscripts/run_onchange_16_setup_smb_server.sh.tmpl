@@ -10,7 +10,7 @@ echo "🌐 Configuring Samba Server shares for {{ .chezmoi.hostname }}..."
 sudo apt update && sudo apt install -y samba
 
 SMB_CONF="/etc/samba/smb.conf"
-TEMP_CONF=$(mktemp)
+TEMP_CONF=$(mktemp --tmpdir="$HOME")
 MARKER="# --- Managed by Chezmoi ---"
 
 # 2. Backup current config to temp

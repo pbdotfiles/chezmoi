@@ -10,7 +10,7 @@ echo "🌐 Configuring NFS Server for {{ .chezmoi.hostname }}..."
 sudo apt update && sudo apt install -y nfs-kernel-server
 
 EXPORTS_FILE="/etc/exports"
-TEMP_EXPORTS=$(mktemp)
+TEMP_EXPORTS=$(mktemp --tmpdir="$HOME")
 MARKER="# --- Managed by Chezmoi ---"
 SHARE_PATH="/mnt/mx500_4t"
 
