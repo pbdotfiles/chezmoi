@@ -10,4 +10,4 @@ vim.g.lazyvim_check_order = false
 vim.g.python3_host_prog = vim.fn.expand("~/.local/share/nvim/venv/bin/python")
 
 -- Use the system clipboard instead of the internal clipboard
-vim.opt.clipboard = "unnamaedplus"
+vim.opt.clipboard = "unnamedplus"
