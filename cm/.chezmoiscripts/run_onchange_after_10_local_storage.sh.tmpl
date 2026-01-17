@@ -55,7 +55,7 @@ EOF
     sudo systemctl enable --now "$UNIT_NAME"
 
     # E. Symlink Logic
-    {{ if .symlink_dirs }}
+    {{ if (index . "symlink_dirs") }}
         echo "Verifying symlinks..."
         {{ range $dir := .symlink_dirs }}
             LINK_PATH="$HOME/{{ $dir }}"
