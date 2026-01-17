@@ -216,3 +216,15 @@ export PATH="$BIN_DIR:$PATH"
 
 echo "🎉 Setup Complete! Restart your shell."
 echo "   Run 'nvim' to finish plugin installation."
+
+# -----------------------------------------------------------------------------
+# 6. POST-INSTALL FIXES
+# -----------------------------------------------------------------------------
+
+# Install every plugin in headless mode
+"$BIN_DIR/nvim" --headless "+Lazy! sync" +qa
+
+# Delete all tree-sitter-cli files, such that lazy is forced to reinstall tree-sitter-cli
+# Fixes a bug where tree-sitter-cli is compiled for an old version of neovim, then we update
+# neovim and the old tree-sitter-cli becomes incompatible with the new neovim.
+rm -rf "$HOME/.local/share/nvim/tree-sitter"
