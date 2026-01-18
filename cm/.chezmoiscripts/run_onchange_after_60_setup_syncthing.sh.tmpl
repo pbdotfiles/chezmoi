@@ -1,0 +1,31 @@
+#!/bin/bash
+
+{{ include ".chezmoitemplates/pause_on_error" }}
+
+set -euo pipefail
+
+{{ include ".chezmoitemplates/sudo_keepalive" }}
+sudo_keepalive
+
+sudo apt install -y syncthing
+ 
+{{- if eq .chezmoi.hostname "minis" }}
+# --- Use existing configuration stored on mx500_4t
+BACKUP_CONFIG_SRC="/mnt/mx500_4t/backuped_data/Paul/home_network/minis/syncthing"
+LOCAL_CONFIG_DEST="$HOME/.local/state/syncthing"
+
+mkdir -p "$HOME/.local/state"
+
+if [ -e "$LOCAL_CONFIG_DEST" ] || [ -L "$LOCAL_CONFIG_DEST" ]; then
+  rm -rf "$LOCAL_CONFIG_DEST"
+fi
+
+ln -s "$BACKUP_CONFIG_SRC" "$LOCAL_CONFIG_DEST"
+{{- end }}
+
+systemctl --user enable --now syncthing.service
+
+# Enable "lingering" so the service runs at boot without having to be logged in
+sudo loginctl enable-linger {{ .chezmoi.username }}
+
+echo "✅ Syncthing setup complete."
