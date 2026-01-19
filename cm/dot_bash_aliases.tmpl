@@ -1,7 +1,12 @@
 # --- Launch/Attach tmux automatically, but only if not already inside it
-# We check if $TMUX is empty AND if the shell is interactive
 if [ -z "$TMUX" ] && [ -n "$PS1" ]; then
-    tmux attach || tmux new -s "$(hostname)"
+    if tmux ls >/dev/null 2>&1; then
+        # Sessions exist, so attach to the most recent one
+        exec tmux attach
+    else
+        # No sessions exist, create a new one named 'main'
+        exec tmux new
+    fi
 fi
 
 export PATH="$HOME/.local/bin:$HOME/bin:$PATH"
