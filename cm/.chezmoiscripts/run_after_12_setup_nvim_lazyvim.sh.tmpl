@@ -229,3 +229,26 @@ echo "   Run 'nvim' to finish plugin installation."
 # Fixes a bug where tree-sitter-cli is compiled for an old version of neovim, then we update
 # neovim and the old tree-sitter-cli becomes incompatible with the new neovim.
 rm -rf "$HOME/.local/share/nvim/tree-sitter"
+
+# -----------------------------------------------------------------------------
+# 7. INSTALL ZOXIDE
+# -----------------------------------------------------------------------------
+echo "🚀 Fetching latest Zoxide..."
+
+# 1. Get the latest release tag
+ZOX_TAG=$(curl -s "https://api.github.com/repos/ajeetdsouza/zoxide/releases/latest" | jq -r '.tag_name')
+ZOX_VER="${ZOX_TAG#v}"
+
+# 2. Download and Extract directly to binary folder
+# Using the musl version for maximum compatibility across all your machines
+TEMP_DIR=$(mktemp -d)
+curl -L "https://github.com/ajeetdsouza/zoxide/releases/download/${ZOX_TAG}/zoxide-${ZOX_VER}-x86_64-unknown-linux-musl.tar.gz" -o "$TEMP_DIR/zoxide.tar.gz"
+
+tar -xzf "$TEMP_DIR/zoxide.tar.gz" -C "$TEMP_DIR" zoxide
+mkdir -p "$HOME/.local/bin"
+install "$TEMP_DIR/zoxide" "$HOME/.local/bin/zoxide"
+
+rm -rf "$TEMP_DIR"
+echo "✅ Zoxide $ZOX_TAG installed to $HOME/.local/bin/zoxide"
+
+
