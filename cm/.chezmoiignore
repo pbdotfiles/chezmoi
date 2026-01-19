@@ -74,6 +74,11 @@
 **/*setup_nfs_server*
 {{- end }}
 
+# If this machine does NOT need to setup the NFS server
+{{- if not (dig "setup_syncthing" false $features) }}
+**/*setup_syncthing*
+{{- end }}
+
 # If this machine does NOT need to do minis-specific setup
 {{- if not (dig "setup_minis_specific" false $features) }}
 **/.borg/passphrase

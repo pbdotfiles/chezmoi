@@ -19,6 +19,7 @@ hosts_features:
     setup_nvidia: false
     setup_smb_share: false
     setup_hd_idle: true
+    setup_syncthing: false
     has_bitwarden: true
 
 
@@ -31,6 +32,7 @@ hosts_features:
     setup_smb_share: true
     setup_conda: true
     setup_nfs_share: true
+    setup_syncthing: true
     has_bitwarden: true
 
   morefine:
@@ -43,6 +45,7 @@ hosts_features:
     setup_nfs_share: true
     setup_conda: true
     setup_docker: true
+    setup_syncthing: true
     has_bitwarden: true
 
   mintvm:
@@ -54,6 +57,7 @@ hosts_features:
     setup_smb_share: true
     setup_conda: true
     setup_docker: true
+    setup_syncthing: true
     has_bitwarden: true
   
   minis:
@@ -69,6 +73,7 @@ hosts_features:
     setup_conda: true
     setup_docker: true
     setup_minis_specific: true
+    setup_syncthing: true
     has_bitwarden: true
 
   vmubuntuserver:
@@ -82,6 +87,7 @@ hosts_features:
     setup_conda: true
     setup_docker: true
     setup_minis_specific: true
+    setup_syncthing: true
     has_bitwarden: true
 
   ALFR-CY5VCK3-L:
@@ -95,6 +101,7 @@ hosts_features:
     setup_conda: true
     setup_docker: true
     setup_minis_specific: false
+    setup_syncthing: false
     has_bitwarden: false
 
 local_storage:
