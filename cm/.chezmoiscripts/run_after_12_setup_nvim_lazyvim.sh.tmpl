@@ -106,6 +106,9 @@ npm config set cafile "$ZSCALER_CERT"
 
 # Bypass remaining SSL checks and ensure we use NVM local paths
 npm config set strict-ssl false
+
+# Remove xclip and wl-clipboard to force using win32yank (to be installed manually at the moment)
+sudo apt remove -y xclip wl-clipboard
 {{- end }}
 
 # Install core global tools for Neovim
