@@ -21,6 +21,11 @@ eval "$(zoxide init bash)"
 export FZF_DEFAULT_COMMAND='fd --type f --type d --strip-cwd-prefix --hidden --follow --exclude .git'
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 
+source "$HOME/.fzf/shell/completion.bash"
+
+# Tell fzf to use the 'cd' fuzzy completion logic for 'z'
+complete -F _fzf_dir_completion -o default -o bashdefault z
+
 {{- $features := dig .chezmoi.hostname (dict) .hosts_features -}}
 
 {{- if (dig "setup_gui" false $features) }}
