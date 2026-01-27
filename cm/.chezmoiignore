@@ -93,6 +93,11 @@
 **/.git-credentials
 {{- end }}
 
+# If this machine does NOT run within WSL
+{{- if not (dig "runs_within_wsl" false $features) }}
+**/*stabilize_wsl*
+{{- end }}
+
 # Never ignore those:
 # ssh_copy_id_all
 # check_bitwarden

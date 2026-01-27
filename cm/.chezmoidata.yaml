@@ -103,6 +103,7 @@ hosts_features:
     setup_minis_specific: false
     setup_syncthing: false
     has_bitwarden: false
+    runs_within_wsl: true
 
 local_storage:
   rone:
