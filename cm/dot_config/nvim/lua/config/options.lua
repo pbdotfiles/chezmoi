@@ -22,3 +22,7 @@ vim.opt.undodir = undodir
 vim.opt.undofile = true
 vim.opt.undolevels = 1000
 vim.opt.undoreload = 10000
+
+-- Always save files with Unix (LF) line endings
+vim.opt.fileformat = "unix"
+vim.opt.fileformats = "unix,dos"
