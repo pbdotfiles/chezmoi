@@ -32,4 +32,24 @@ return {
 			},
 		},
 	},
+	{
+		"neovim/nvim-lspconfig",
+		opts = {
+			servers = {
+				pyright = {
+					settings = {
+						python = {
+							analysis = {
+								-- This allows 'gd' to work for "from src.xxx import yyy"
+								-- without needing a config file in every project.
+								extraPaths = { "src" },
+								autoSearchPaths = true,
+								useLibraryCodeForTypes = true,
+							},
+						},
+					},
+				},
+			},
+		},
+	},
 }
