@@ -26,3 +26,7 @@ vim.opt.undoreload = 10000
 -- Always save files with Unix (LF) line endings
 vim.opt.fileformat = "unix"
 vim.opt.fileformats = "unix,dos"
+
+-- Adjust timeoutlen when needing to press two commands in quick succession
+-- For example when doing \ r  to apply all search-and-replace
+vim.opt.timeoutlen = 700
