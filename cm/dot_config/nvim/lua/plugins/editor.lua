@@ -1,6 +1,7 @@
 return {
 	{
 		"folke/snacks.nvim",
+		optional = true,
 		opts = {
 			picker = {
 				sources = {
@@ -18,6 +19,7 @@ return {
 	},
 	{
 		"saghen/blink.cmp",
+		optional = true,
 		opts = {
 			keymap = {
 				preset = "default",
