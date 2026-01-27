@@ -11,3 +11,14 @@ vim.g.python3_host_prog = vim.fn.expand("~/.local/share/nvim/venv/bin/python")
 
 -- Use the system clipboard instead of the internal clipboard
 vim.opt.clipboard = "unnamedplus"
+
+-- Make undo persistent : can undo after closing/reopening neovim.
+-- Place all undo files in a single directory, out of sight.
+local undodir = vim.fn.expand("~/.local/state/nvim/undo")
+if vim.fn.isdirectory(undodir) == 0 then
+	vim.fn.mkdir(undodir, "p")
+end
+vim.opt.undodir = undodir
+vim.opt.undofile = true
+vim.opt.undolevels = 1000
+vim.opt.undoreload = 10000
