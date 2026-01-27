@@ -6,6 +6,7 @@
 return {
 	{ import = "lazyvim.plugins.extras.editor.mini-files" }, -- Activate mini-files
 	{ import = "lazyvim.plugins.extras.lang.markdown" }, -- Activate markdown preview
+	{ import = "lazyvim.plugins.extras.lang.python" }, -- Activate python
 
 	-- Override : disable markdownlint
 	{
