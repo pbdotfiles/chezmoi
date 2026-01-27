@@ -42,6 +42,10 @@ alias nvidia-limit="sudo nvidia-smi -pm 1 && sudo nvidia-smi -pl 100"
 alias trackmania="cd /mnt/ext4_data/projects/trackmania_rl/ && conda activate tm311"
 {{- end }}
 
+# Recursively apply dos2unix in all files if the folder and subfolders. Ignore hidden files and files in gitignore.
+alias d2u='fd -tf -x dos2unix'
+# Same as above, but also applied on files that are gitignored.
+alias d2ui='fd -tf -I -x dos2unix'
 
 HISTSIZE=100000
 HISTFILESIZE=100000
