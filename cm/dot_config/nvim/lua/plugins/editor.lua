@@ -16,4 +16,13 @@ return {
 			},
 		},
 	},
+	{
+		"saghen/blink.cmp",
+		opts = {
+			keymap = {
+				preset = "default",
+				["<CR>"] = { "fallback" }, -- This disables Enter for completion
+			},
+		},
+	},
 }
