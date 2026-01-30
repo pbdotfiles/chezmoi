@@ -7,4 +7,5 @@
 
 47 2 */3 * * export BORG_PASSPHRASE=$(cat ~/.borg/passphrase) && borg prune --list --stats --keep-daily=7 --keep-weekly=4 --keep-monthly=6 --keep-yearly=5 ronewg:/mnt/wdd/borgrepo ; borg create ronewg:/mnt/wdd/borgrepo::{now} /mnt/mx500_4t -v --progress --compression zstd 
 55 3 *   * * export BORG_PASSPHRASE=$(cat ~/.borg/passphrase) && borg prune --list --stats --keep-daily=7 --keep-weekly=4 --keep-monthly=6 --keep-yearly=5 /mnt/mx500_2t/borgbackup ; borg create /mnt/mx500_2t/borgbackup::{now} /mnt/mx500_4t/backuped_data/ -v --progress --compression zstd
+18 4 *   * * docker run --rm -v /mnt/mx500_4t/unbackuped_data/docker/renewables_forecasts/data/collectForecastsParquet:/app/data -v /mnt/mx500_4t/unbackuped_data/docker/renewables_forecasts/data/collectForecastsParquet_archive:/app/archive google_upload --local-folder /app/data --archive-folder /app/archive --drive-folder-id "12OJ7nLQ2pJJueii-zA7QCjaDvTTRjFOb"
 
