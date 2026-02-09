@@ -35,7 +35,7 @@ EOF
     sudo systemctl restart systemd-logind
     echo "✅ WSL stability configuration applied."
 
-    # 1. Configure /etc/wsl.conf
+    # 4. Configure /etc/wsl.conf
     # This ensures systemd is on and the Windows PATH doesn't pollute your environment.
     # echo "📝 Writing /etc/wsl.conf..."
 
@@ -52,6 +52,11 @@ appendWindowsPath = false
 [network]
 generateResolvConf = true
 EOF
+
+    # 5. Enable lingering
+    # (otherwise when systemd finished starting 5-10 seconds after startup
+    # it sends a signal that tmux interprets as SIGKILL and exits)
+    sudo loginctl enable-linger paul
 
 else
     echo "Skipping WSL stability fixes (not a WSL environment)."
