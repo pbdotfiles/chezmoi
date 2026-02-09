@@ -1,3 +1,7 @@
+export PATH="$HOME/.local/bin:$HOME/bin:$PATH"
+export EDITOR="nvim"
+export VISUAL="nvim"
+
 # --- Launch/Attach tmux automatically, but only if not already inside it
 if [ -z "$TMUX" ] && [ -n "$PS1" ]; then
     if tmux ls >/dev/null 2>&1; then
@@ -9,22 +13,17 @@ if [ -z "$TMUX" ] && [ -n "$PS1" ]; then
     fi
 fi
 
-export PATH="$HOME/.local/bin:$HOME/bin:$PATH"
-export EDITOR="nvim"
-export VISUAL="nvim"
-
 eval "$(starship init bash)"
-eval "$(fzf --bash)"
 eval "$(zoxide init bash)"
+eval "$(fzf --bash)"
+alias cd=z
 
 # Make fzf use fd for faster, cleaner searches
 export FZF_DEFAULT_COMMAND='fd --type f --type d --strip-cwd-prefix --hidden --follow --exclude .git'
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 
-source "$HOME/.fzf/shell/completion.bash"
-
-# Tell fzf to use the 'cd' fuzzy completion logic for 'z'
-complete -F _fzf_dir_completion -o default -o bashdefault z
+_fzf_setup_completion dir z
+complete -F _fzf_complete_z -o nospace -o default -o bashdefault cd
 
 {{- $features := dig .chezmoi.hostname (dict) .hosts_features -}}
 
