@@ -123,7 +123,7 @@ local_storage:
 
   chopin:
     drives:
-      - uuid: "d37b0659-6932-4168-b53c-87c7afae8700"
+      - uuid: "03ff35b6-61a0-4b23-8b09-6431e2b71955"
         path: "/mnt/btr"
         owner: "paul"
         filesystem_type: "btrfs"
