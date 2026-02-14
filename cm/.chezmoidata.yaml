@@ -28,7 +28,7 @@ hosts_features:
     setup_server: false 
     setup_wireguard: false
     setup_nvidia: false
-    setup_smb_share: true
+    setup_smb_share: false
     setup_conda: true
     setup_nfs_share: true
     setup_syncthing: true
@@ -40,7 +40,7 @@ hosts_features:
     setup_server: false
     setup_wireguard: false
     setup_nvidia: false
-    setup_smb_share: true
+    setup_smb_share: false
     setup_nfs_share: true
     setup_conda: true
     setup_docker: true
@@ -53,7 +53,7 @@ hosts_features:
     setup_server: false
     setup_wireguard: false
     setup_nvidia: false
-    setup_smb_share: true
+    setup_smb_share: false
     setup_conda: true
     setup_docker: true
     setup_syncthing: true
@@ -109,12 +109,16 @@ local_storage:
       - uuid: "0cfde01b-f95e-4c53-842b-42674ddd3b25"
         path: "/mnt/wdd"
         owner: "paul"
+        filesystem_type: ext4
+        options: defaults
 
   fractal:
     drives:
       - uuid: "bca615bc-2c63-4db8-8408-ddd48b27ab55"
         path: "/mnt/ext4_data"
         owner: "paul"
+        filesystem_type: ext4
+        options: defaults
         symlink_dirs:
           - "Downloads"
           - "Documents"
