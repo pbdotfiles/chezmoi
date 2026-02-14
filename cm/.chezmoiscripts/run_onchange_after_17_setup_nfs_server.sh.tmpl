@@ -12,7 +12,7 @@ sudo apt update && sudo apt install -y nfs-kernel-server
 EXPORTS_FILE="/etc/exports"
 TEMP_EXPORTS=$(mktemp --tmpdir="$HOME")
 MARKER="# --- Managed by Chezmoi ---"
-SHARE_PATH="/mnt/mx500_4t"
+SHARE_PATH="/mnt/btr"
 
 # 2. Backup current config
 sudo cp "$EXPORTS_FILE" "$TEMP_EXPORTS"

@@ -23,7 +23,7 @@ sudo sed -i "\|$MARKER|,\$d" "$TEMP_CONF"
 cat <<EOF | sudo tee -a "$TEMP_CONF" > /dev/null
 $MARKER
 [share]
-  path = /mnt/mx500_4t
+  path = /mnt/btr
   valid users = paul
   browseable = yes
   read only = no

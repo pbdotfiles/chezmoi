@@ -7,10 +7,10 @@ set -euo pipefail
 {{ include ".chezmoitemplates/filesystem_utils" }}
 
 # --- Configuration ---
-SHARE_REMOTE="//minis/share"
-MOUNT_POINT="/mnt/minis_share"
+SHARE_REMOTE="//chopin/share"
+MOUNT_POINT="/mnt/chopin_share"
 CREDENTIALS_FILE="/root/.smbcredentials"
-# Use systemd-escape to generate the unit name (e.g., mnt-minis_share.mount)
+# Use systemd-escape to generate the unit name (e.g., mnt-chopin_share.mount)
 MOUNT_UNIT=$(systemd-escape --path --suffix=mount "$MOUNT_POINT")
 AUTOMOUNT_UNIT=$(systemd-escape --path --suffix=automount "$MOUNT_POINT")
 

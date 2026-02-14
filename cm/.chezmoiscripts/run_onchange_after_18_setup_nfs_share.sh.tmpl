@@ -7,10 +7,10 @@ set -euo pipefail
 {{ include ".chezmoitemplates/filesystem_utils" }}
 
 # --- Configuration ---
-# Assuming 'minis' resolves in your /etc/hosts or DNS. 
+# Assuming 'chopin' resolves in your /etc/hosts or DNS. 
 # If not, you might need the IP address here.
-SHARE_REMOTE="minis:/mnt/mx500_4t"
-MOUNT_POINT="/mnt/minis_nfs"
+SHARE_REMOTE="chopin:/mnt/btr"
+MOUNT_POINT="/mnt/chopin_nfs"
 
 # Use systemd-escape to generate the unit name
 MOUNT_UNIT=$(systemd-escape --path --suffix=mount "$MOUNT_POINT")

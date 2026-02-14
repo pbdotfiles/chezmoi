@@ -3,14 +3,14 @@
 {{ include ".chezmoitemplates/pause_on_error" }}
 
 # Trigger if the crontab source file changes
-# minis_crontab hash: {{ include "dot_minis_crontab.tmpl" | sha256sum }}
+# chopin_crontab hash: {{ include "dot_chopin_crontab.tmpl" | sha256sum }}
 
-echo "⏰ Updating system crontab from ~/.minis_crontab..."
+echo "⏰ Updating system crontab from ~/.chopin_crontab..."
 
-if [ -f "$HOME/.minis_crontab" ]; then
-    crontab "$HOME/.minis_crontab"
+if [ -f "$HOME/.chopin_crontab" ]; then
+    crontab "$HOME/.chopin_crontab"
     echo "✅ System crontab updated successfully."
 else
-    echo "❌ Error: ~/.minis_crontab not found."
+    echo "❌ Error: ~/.chopin_crontab not found."
     exit 1
 fi

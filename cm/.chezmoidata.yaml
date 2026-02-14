@@ -5,7 +5,7 @@
 # setup_server: Installs UFW, Cockpit, Unattended Upgrades, etc.
 # setup_wireguard:    Installs Wireguard package and wg0.conf
 # setup_nvidia:       Installs proprietary NVIDIA drivers and tools
-# setup_smb_share:    Mounts the specific 'minis' Samba share
+# setup_smb_share:    Mounts the specific 'chopin' Samba share
 # setup_docker:
 # setup_conda:
 # =============================================================================
@@ -21,7 +21,6 @@ hosts_features:
     setup_hd_idle: true
     setup_syncthing: false
     has_bitwarden: true
-
 
   fractal:
     setup_gui: true
@@ -60,7 +59,7 @@ hosts_features:
     setup_syncthing: true
     has_bitwarden: true
   
-  minis:
+  chopin:
     setup_gui: false
     setup_fonts: false
     setup_server: true
@@ -72,7 +71,7 @@ hosts_features:
     setup_nfs_server: true
     setup_conda: true
     setup_docker: true
-    setup_minis_specific: true
+    setup_chopin_specific: true
     setup_syncthing: true
     has_bitwarden: true
 
@@ -86,7 +85,7 @@ hosts_features:
     setup_smb_server: true
     setup_conda: true
     setup_docker: true
-    setup_minis_specific: true
+    setup_chopin_specific: true
     setup_syncthing: true
     has_bitwarden: true
 
@@ -100,7 +99,6 @@ hosts_features:
     setup_smb_server: false
     setup_conda: true
     setup_docker: true
-    setup_minis_specific: false
     setup_syncthing: false
     has_bitwarden: false
     runs_within_wsl: true
@@ -123,11 +121,10 @@ local_storage:
           - "Pictures"
           - "Torrents"
 
-  minis:
+  chopin:
     drives:
-      - uuid: "4c1bbb69-68bd-40c9-8257-c519a91d7d99"
-        path: "/mnt/mx500_2t"
+      - uuid: "d37b0659-6932-4168-b53c-87c7afae8700"
+        path: "/mnt/btr"
         owner: "paul"
-      - uuid: "134a9171-9aea-4363-809b-5c6565386970"
-        path: "/mnt/mx500_4t"
-        owner: "paul"
+        filesystem_type: "btrfs"
+        options: "defaults,compress=zstd:1,noatime"
