@@ -1,13 +1,16 @@
-BW_CMD="$HOME/bin/bw"
+#!/bin/bash
+
+# $HOME/bin is probably already on the path, re-add it just in case
+export PATH="$HOME/bin:$PATH"
 
 # Check the Bitwarden status
 # We use grep so we don't depend on 'jq' being installed
-if $BW_CMD status | grep -q '"status":"unauthenticated"'; then
+if bw status | grep -q '"status":"unauthenticated"'; then
   echo "🔑 Logging into Bitwarden..."
-  export BW_SESSION=$($BW_CMD login --raw)
+  export BW_SESSION=$(bw login --raw)
 else
   echo "🔓 Unlocking Bitwarden..."
-  export BW_SESSION=$($BW_CMD unlock --raw)
+  export BW_SESSION=$(bw unlock --raw)
 fi
 
 # Optional: Verify it worked
