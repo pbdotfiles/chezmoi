@@ -125,6 +125,19 @@ local_storage:
           - "Pictures"
           - "Torrents"
 
+  morefine:
+    drives:
+      - uuid: "bd302b3d-808e-4b51-99e6-65ce3390cf01"
+        path: "/mnt/stb"
+        owner: "paul"
+        filesystem_type: ext4
+        options: defaults
+        symlink_dirs:
+          - "Downloads"
+          - "Documents"
+          - "Pictures"
+          - "Torrents"
+
   chopin:
     drives:
       - uuid: "03ff35b6-61a0-4b23-8b09-6431e2b71955"
