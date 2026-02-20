@@ -9,6 +9,12 @@ if [ ! -f ~/.ssh/id_rsa ]; then
   ssh-keygen -t rsa -N "" -f ~/.ssh/id_rsa
 fi
 
+# Check if sshpass command exists
+if ! command -v sshpass >/dev/null 2>&1; then
+  echo "sshpass not found, installing..."
+  sudo apt update && sudo apt install -y sshpass
+fi
+
 copy_id() {
   local host=$1
   local user=$2
@@ -22,7 +28,7 @@ copy_id() {
   fi
 }
 
-copy_id "chopin" "paul" "{{ (bitwarden "item" "homenetwork_chopin_paul").login.password }}"
+copy_id "minis" "paul" "{{ (bitwarden "item" "homenetwork_minis_paul").login.password }}"
 copy_id "rone" "paul" "{{ (bitwarden "item" "homenetwork_rone_paul").login.password }}"
 copy_id "ronewg" "paul" "{{ (bitwarden "item" "homenetwork_rone_paul").login.password }}"
 copy_id "10.0.0.3" "paul" "{{ (bitwarden "item" "homenetwork_rone_paul").login.password }}"
