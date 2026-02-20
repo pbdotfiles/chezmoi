@@ -60,3 +60,14 @@ _tm_completion() {
 }
 complete -F _tm_completion tm
 
+#--- Yazi utility
+# Press 'q' to exit and stay in the same directory.
+# Press 'Shift-q' to exit and remain in the original directory.
+function yazi() {
+	local tmp="$(mktemp -t "yazi-cwd.XXXXXX")"
+	command yazi "$@" --cwd-file="$tmp"
+	if cwd="$(command cat -- "$tmp")" && [ -n "$cwd" ] && [ "$cwd" != "$PWD" ]; then
+		builtin cd -- "$cwd"
+	fi
+	rm -f -- "$tmp"
+}
