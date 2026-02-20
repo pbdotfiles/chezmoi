@@ -1,12 +1,20 @@
 # --- Launch/Attach tmux automatically, but only if not already inside it
 if [ -z "$TMUX" ] && [ -n "$PS1" ]; then
-    if tmux ls >/dev/null 2>&1; then
-        # Sessions exist, so attach to the most recent one
-        exec tmux attach
-    else
-        # No sessions exist, create a new one named 'main'
-        exec tmux new
+  if tmux ls >/dev/null 2>&1; then
+    # Find the most recently active session
+    LAST_SESSION=$(tmux ls -F '#{session_last_attached} #{session_name}' 2>/dev/null | sort -nr | head -n 1 | cut -d' ' -f2-)
+
+    # If opening in a specific folder (like via Nemo), create a new window for it.
+    if [ "$PWD" != "$HOME" ]; then
+      tmux new-window -t "$LAST_SESSION" -c "$PWD"
     fi
+
+    # Attach to the session
+    exec tmux attach -t "$LAST_SESSION"
+  else
+    # No sessions exist, create a new one starting in the current directory
+    exec tmux new -s main -c "$PWD"
+  fi
 fi
 
 export PATH="$HOME/.local/bin:$HOME/bin:$PATH"
