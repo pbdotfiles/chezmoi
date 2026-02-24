@@ -11,3 +11,5 @@
 # Send forecasts downloaded to Google Drive 
 18 4 *   * * docker run --rm -v /mnt/btr/unbackuped_data/docker/renewables_forecasts/data/collectForecastsParquet:/app/data -v /mnt/btr/unbackuped_data/docker/renewables_forecasts/data/collectForecastsParquet_archive:/app/archive google_upload --local-folder /app/data --archive-folder /app/archive --drive-folder-id "12OJ7nLQ2pJJueii-zA7QCjaDvTTRjFOb"
 
+#
+3 * * * * curl -fsS -m 10 --retry 5 -o /dev/null https://hc-ping.com/{{ (bitwardenFields "item" "healthchecks-chopin-heartbeat").uuid.value }}
