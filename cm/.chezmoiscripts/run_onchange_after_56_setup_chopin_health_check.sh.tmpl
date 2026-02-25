@@ -1,0 +1,186 @@
+#!/bin/bash
+
+{{ include ".chezmoitemplates/pause_on_error" }}
+
+set -euo pipefail
+
+{{ include ".chezmoitemplates/sudo_keepalive" }}
+sudo_keepalive
+
+echo "🩺 Configuring Unified Health Monitor (Services, BTRFS, SMART)..."
+
+# Ensure smartmontools is installed for drive health checks
+if ! command -v smartctl &> /dev/null; then
+    echo "Installing smartmontools..."
+    sudo apt update && sudo apt install -y smartmontools
+fi
+
+# Retrieve the UUID securely from Bitwarden
+HC_UUID="{{ (bitwardenFields "item" "healthchecks-chopin-general-health").uuid.value }}"
+MOUNTPOINT="/mnt/btr"
+USERNAME="{{ .chezmoi.username }}"
+
+# 1. Create the unified health wrapper script
+echo "   -> Creating wrapper script at /usr/local/bin/chopin-general-health..."
+cat << 'EOF' | sudo tee /usr/local/bin/chopin-general-health > /dev/null
+#!/bin/bash
+MOUNTPOINT="${1}"
+USERNAME="${2}"
+HC_UUID="${3}"
+HC_URL="https://hc-ping.com/$HC_UUID"
+
+LOG_FILE=$(mktemp)
+trap 'rm -f "$LOG_FILE"' EXIT
+ERRORS=0
+
+echo "=== Chopin Health Report: $(date) ===" > "$LOG_FILE"
+
+# ---------------------------------------------------------
+# SIGNAL START
+# ---------------------------------------------------------
+curl -fsS -m 10 --retry 5 -o /dev/null "$HC_URL/start"
+
+# ---------------------------------------------------------
+# 1. SERVICES CHECK
+# ---------------------------------------------------------
+echo -e "\n[SERVICES]" >> "$LOG_FILE"
+for svc in smbd nfs-kernel-server docker; do
+    if systemctl is-active --quiet "$svc"; then
+        echo "✅ $svc is active" >> "$LOG_FILE"
+    else
+        echo "❌ $svc is NOT active!" >> "$LOG_FILE"
+        ERRORS=1
+    fi
+done
+
+if systemctl --user -M "${USERNAME}@" is-active --quiet syncthing.service; then
+    echo "✅ syncthing (user: $USERNAME) is active" >> "$LOG_FILE"
+else
+    echo "❌ syncthing (user: $USERNAME) is NOT active!" >> "$LOG_FILE"
+    ERRORS=1
+fi
+
+# ---------------------------------------------------------
+# 2. BTRFS CATASTROPHIC FAILURE CHECKS
+# ---------------------------------------------------------
+echo -e "\n[BTRFS ARRAY]" >> "$LOG_FILE"
+if ! mountpoint -q "$MOUNTPOINT"; then
+    echo "❌ CRITICAL: $MOUNTPOINT is NOT mounted! Array is offline." >> "$LOG_FILE"
+    ERRORS=1
+else
+    echo "✅ $MOUNTPOINT is mounted" >> "$LOG_FILE"
+
+    # Check for Read-Only panic state
+    if grep -q " $MOUNTPOINT btrfs ro," /proc/mounts; then
+        echo "❌ CRITICAL: $MOUNTPOINT is in READ-ONLY mode (Data Protection Panic)!" >> "$LOG_FILE"
+        ERRORS=1
+    else
+        echo "✅ Array is Read-Write" >> "$LOG_FILE"
+    fi
+
+    # Check for physical missing devices
+    if btrfs filesystem show "$MOUNTPOINT" | grep -q "Some devices missing"; then
+        echo "❌ CRITICAL: BTRFS is reporting missing physical devices!" >> "$LOG_FILE"
+        ERRORS=1
+    else
+        echo "✅ All physical devices are present" >> "$LOG_FILE"
+    fi
+
+    # Check for hardware/IO error storm
+    BTRFS_ERRS=$(btrfs device stats "$MOUNTPOINT" | awk '{print $4}' | grep -v '^0$')
+    if [ -n "$BTRFS_ERRS" ]; then
+        echo "❌ CRITICAL: BTRFS device stats show IO/Corruption errors!" >> "$LOG_FILE"
+        btrfs device stats "$MOUNTPOINT" >> "$LOG_FILE"
+        ERRORS=1
+    else
+        echo "✅ BTRFS device error counters are 0" >> "$LOG_FILE"
+    fi
+
+    # Check Capacity
+    CAPACITY=$(df "$MOUNTPOINT" | awk 'NR==2 {print $5}' | sed 's/%//')
+    if [ -n "$CAPACITY" ] && [ "$CAPACITY" -gt 85 ]; then
+        echo "⚠️ WARNING: BTRFS capacity is at ${CAPACITY}%" >> "$LOG_FILE"
+        ERRORS=1
+    else
+        echo "✅ Capacity is OK (${CAPACITY}%)" >> "$LOG_FILE"
+    fi
+fi
+
+# ---------------------------------------------------------
+# 3. SMART DRIVE HEALTH
+# ---------------------------------------------------------
+echo -e "\n[SMART DATA]" >> "$LOG_FILE"
+# Extract the physical drives currently attached to the array
+DEVICES=$(btrfs filesystem show "$MOUNTPOINT" 2>/dev/null | grep 'path' | awk '{print $NF}')
+
+if [ -z "$DEVICES" ]; then
+    echo "⚠️ Could not identify backing devices for SMART check." >> "$LOG_FILE"
+else
+    for dev in $DEVICES; do
+        echo -e "\n-> Drive: $dev" >> "$LOG_FILE"
+        
+        # Check overall SMART assessment (Exit code > 0 usually indicates failure)
+        if smartctl -H "$dev" | grep -iq "PASSED"; then
+            echo "✅ SMART Overall Health: PASSED" >> "$LOG_FILE"
+        else
+            echo "❌ SMART Overall Health: FAILED / WARNING!" >> "$LOG_FILE"
+            ERRORS=1
+        fi
+        
+        # Log key wear-and-tear attributes (Works for both NVMe and SATA)
+        # Grepping for: reallocated, wear, temperature, percent, spare, error
+        echo "Key Attributes:" >> "$LOG_FILE"
+        smartctl -A "$dev" | grep -iE 'reallocated|wear|temp|percent|spare|error' | awk '{$1=$1;print "  - "$0}' >> "$LOG_FILE" || true
+    done
+fi
+
+# ---------------------------------------------------------
+# REPORT TO HEALTHCHECKS
+# ---------------------------------------------------------
+echo -e "\n=== End of Report ===" >> "$LOG_FILE"
+
+if [ "$ERRORS" -eq 0 ]; then
+    # Success
+    tail -c 10000 "$LOG_FILE" | curl -fsS -m 10 --retry 5 -o /dev/null --data-binary @- "$HC_URL/0"
+else
+    # Failure
+    tail -c 10000 "$LOG_FILE" | curl -fsS -m 10 --retry 5 -o /dev/null --data-binary @- "$HC_URL/1"
+fi
+
+exit "$ERRORS"
+EOF
+
+sudo chmod +x /usr/local/bin/chopin-general-health
+
+# 2. Create the systemd service
+echo "   -> Creating systemd service..."
+cat << EOF | sudo tee /etc/systemd/system/chopin-general-health.service > /dev/null
+[Unit]
+Description=Chopin Unified Health Monitor
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/chopin-general-health $MOUNTPOINT $USERNAME $HC_UUID
+EOF
+
+# 3. Create the systemd timer (Runs every hour)
+echo "   -> Creating systemd timer..."
+cat << 'EOF' | sudo tee /etc/systemd/system/chopin-general-health.timer > /dev/null
+[Unit]
+Description=Run Chopin Health Monitor every hour
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+
+# 4. Enable and start the timer
+echo "   -> Reloading systemd and enabling timer..."
+sudo systemctl daemon-reload
+sudo systemctl enable --now chopin-general-health.timer
+
+echo "✅ Unified Health Monitor scheduled via systemd."

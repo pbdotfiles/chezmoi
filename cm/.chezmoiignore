@@ -111,6 +111,7 @@
 # If this machine does NOT run within WSL
 {{- if not (dig "setup_chopin_specific" false $features) }}
 **/*syncthing.service.d*
+**/*setup_chopin_health_check*
 {{- end }}
 
 
