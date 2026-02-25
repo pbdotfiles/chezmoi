@@ -72,10 +72,10 @@ hosts_features:
     setup_nfs_server: true
     setup_conda: true
     setup_docker: true
-    setup_chopin_specific: true
     setup_crontab: true
     setup_syncthing: true
     has_bitwarden: true
+    setup_borgpassphrase: true
 
   vmubuntuserver:
     setup_gui: false
