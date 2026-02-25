@@ -2,12 +2,12 @@
 # This file is managed by CHEZMOI.
 #
 # The file is loaded with
-# `crontab ~/.chopin_crontab`
+# `crontab ~/.crontab`
 # ===============================================================
 
 {{ if eq .chezmoi.hostname "chopin" }}
 
-47 2 */3 * * /home/{{ .chezmoi.user }}/.local/share/bin/borg_backup_chopin_cron.sh >/dev/null 2>&1
+47 2 */3 * * /home/{{ .chezmoi.username }}/.local/share/bin/borg_backup_chopin_cron.sh >/dev/null 2>&1
 
 # Send forecasts downloaded to Google Drive
 18 4 *   * * docker run --rm -v /mnt/btr/unbackuped_data/docker/renewables_forecasts/data/collectForecastsParquet:/app/data -v /mnt/btr/unbackuped_data/docker/renewables_forecasts/data/collectForecastsParquet_archive:/app/archive google_upload --local-folder /app/data --archive-folder /app/archive --drive-folder-id "12OJ7nLQ2pJJueii-zA7QCjaDvTTRjFOb"
