@@ -26,7 +26,7 @@ sudo sed -i "\|$MARKER|,\$d" "$TEMP_EXPORTS"
 # no_subtree_check improves performance.
 cat <<EOF | sudo tee -a "$TEMP_EXPORTS" > /dev/null
 $MARKER
-$SHARE_PATH  192.168.0.0/16(rw,sync,no_subtree_check,all_squash,anonuid=$(id -u),anongid=$(id -g))
+$SHARE_PATH  192.168.0.0/16(rw,sync,no_subtree_check,all_squash,anonuid={{ output "id" "-u" .chezmoi.username | trim }},anongid={{ output "id" "-g" .chezmoi.username | trim }}
 EOF
 
 # 5. Apply configuration

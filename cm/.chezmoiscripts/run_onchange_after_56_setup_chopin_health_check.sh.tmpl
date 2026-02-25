@@ -97,12 +97,21 @@ else
     fi
 
     # Check Capacity
-    CAPACITY=$(df "$MOUNTPOINT" | awk 'NR==2 {print $5}' | sed 's/%//')
+    CAPACITY=$(btrfs filesystem usage -b "$MOUNTPOINT" | awk '
+        /Device size:/ { total = $3 } 
+        /Free \(estimated\):/ { free = $3 } 
+        END { 
+            if (total > 0) print int(100 - (free / total * 100)) 
+        }')
+
     if [ -n "$CAPACITY" ] && [ "$CAPACITY" -gt 85 ]; then
         echo "⚠️ WARNING: BTRFS capacity is at ${CAPACITY}%" >> "$LOG_FILE"
         ERRORS=1
-    else
+    elif [ -n "$CAPACITY" ]; then
         echo "✅ Capacity is OK (${CAPACITY}%)" >> "$LOG_FILE"
+    else
+        echo "⚠️ WARNING: Could not determine BTRFS capacity" >> "$LOG_FILE"
+        ERRORS=1
     fi
 fi
 

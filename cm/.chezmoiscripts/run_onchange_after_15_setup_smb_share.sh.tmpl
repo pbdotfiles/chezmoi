@@ -39,8 +39,6 @@ cat <<EOF | sudo install -m 644 /dev/stdin "/etc/systemd/system/$MOUNT_UNIT"
 [Unit]
 Description=Mount Samba Share at $MOUNT_POINT
 Documentation=man:systemd.mount(5)
-After=network-online.target
-Wants=network-online.target
 
 [Mount]
 What=$SHARE_REMOTE
