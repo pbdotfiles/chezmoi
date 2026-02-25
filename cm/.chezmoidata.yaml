@@ -76,6 +76,7 @@ hosts_features:
     setup_syncthing: true
     has_bitwarden: true
     setup_borgbackups: true
+    setup_btrfs_scrub: true
 
   vmubuntuserver:
     setup_gui: false
