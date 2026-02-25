@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export BORG_PASSCOMMAND="cat /home/{{ .chezmoi.user }}/.borg/passphrase"
+export BORG_PASSCOMMAND="cat /home/{{ .chezmoi.username }}/.borg/passphrase"
 REPO="ronewg:/mnt/wdd/borgrepo"
 SOURCE="/mnt/btr"
 
