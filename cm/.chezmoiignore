@@ -79,11 +79,15 @@
 **/*setup_syncthing*
 {{- end }}
 
+# If this machine does NOT need to do setup CRON tasks
+{{- if not (dig "setup_crontab" false $features) }}
+**/.crontab**
+**/*install_cron**
+{{- end }}
+
 # If this machine does NOT need to do chopin-specific setup
 {{- if not (dig "setup_chopin_specific" false $features) }}
 **/.borg/passphrase
-**/.chopin_crontab**
-**/*install_chopin_cron**
 {{- end }}
 
 # If this machine does NOT have bitwarden:

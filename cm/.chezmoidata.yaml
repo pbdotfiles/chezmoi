@@ -21,6 +21,7 @@ hosts_features:
     setup_hd_idle: true
     setup_syncthing: false
     has_bitwarden: true
+    setup_crontab: true
 
   fractal:
     setup_gui: true
@@ -72,6 +73,7 @@ hosts_features:
     setup_conda: true
     setup_docker: true
     setup_chopin_specific: true
+    setup_crontab: true
     setup_syncthing: true
     has_bitwarden: true
 
