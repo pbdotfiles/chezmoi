@@ -77,6 +77,7 @@ hosts_features:
     has_bitwarden: true
     setup_borgbackups: true
     setup_btrfs_scrub: true
+    setup_chopin_specific: true
 
   vmubuntuserver:
     setup_gui: false

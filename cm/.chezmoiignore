@@ -108,6 +108,10 @@
 **/*stabilize_wsl*
 {{- end }}
 
+# If this machine does NOT run within WSL
+{{- if not (dig "setup_chopin_specific" false $features) }}
+**/*syncthing.service.d*
+{{- end }}
 
 
 # Never ignore those:
