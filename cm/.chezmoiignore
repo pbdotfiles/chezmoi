@@ -86,8 +86,9 @@
 {{- end }}
 
 # If this machine does NOT need to do chopin-specific setup
-{{- if not (dig "setup_borgpassphrase" false $features) }}
+{{- if not (dig "setup_borgbackups" false $features) }}
 **/.borg/passphrase
+**/*borg_backup_chopin_cron**
 {{- end }}
 
 # If this machine does NOT have bitwarden:

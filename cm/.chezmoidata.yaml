@@ -75,7 +75,7 @@ hosts_features:
     setup_crontab: true
     setup_syncthing: true
     has_bitwarden: true
-    setup_borgpassphrase: true
+    setup_borgbackups: true
 
   vmubuntuserver:
     setup_gui: false
