@@ -12,8 +12,8 @@ HC_UUID="{{ (bitwardenFields "item" "healthchecks-chopin-btrfs-scrub").uuid.valu
 MOUNTPOINT="/mnt/btr"
 
 # 1. Create the wrapper script
-echo "   -> Creating wrapper script at /usr/local/bin/btrfs-scrub-hc..."
-cat << 'EOF' | sudo tee /usr/local/bin/btrfs-scrub-hc > /dev/null
+echo "   -> Creating wrapper script at /usr/local/bin/btrfs-scrub..."
+cat << 'EOF' | sudo tee /usr/local/bin/btrfs-scrub > /dev/null
 #!/bin/bash
 MOUNTPOINT="${1:-/}"
 HC_UUID="$2"
