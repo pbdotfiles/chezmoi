@@ -14,7 +14,5 @@ detect_files = []
 detect_folders = []
 
 [pixi]
-# Only show the pixi module if the pixi environment variable is active
-detect_env_vars = ["PIXI_ENVIRONMENT_NAME"]
 # Disable scanning for the pixi.toml file
 detect_files = []
