@@ -4,3 +4,17 @@ scan_timeout = 100
 
 # Optional: You can also increase command_timeout if git status is slow
 # command_timeout = 100
+
+[python]
+# Only show the python module if a virtual environment is active
+detect_env_vars = ["VIRTUAL_ENV", "CONDA_PREFIX", "PIXI_ENVIRONMENT_NAME"]
+# Disable scanning for python files/extensions to trigger the prompt
+detect_extensions = []
+detect_files = []
+detect_folders = []
+
+[pixi]
+# Only show the pixi module if the pixi environment variable is active
+detect_env_vars = ["PIXI_ENVIRONMENT_NAME"]
+# Disable scanning for the pixi.toml file
+detect_files = []
