@@ -14,3 +14,9 @@
 	loggraph = !"git log --all --graph --decorate --oneline"
 [init]
 	defaultBranch = main
+[merge]
+  tool = nvim-diffview
+  conflictstyle = zdiff3       # keep this, useful in terminal
+[mergetool "nvim-diffview"]
+  cmd = nvim -c 'DiffviewOpen'
+  prompt = false

@@ -79,11 +79,16 @@
 **/*setup_syncthing*
 {{- end }}
 
-# If this machine does NOT need to do minis-specific setup
-{{- if not (dig "setup_minis_specific" false $features) }}
+# If this machine does NOT need to do setup CRON tasks
+{{- if not (dig "setup_crontab" false $features) }}
+**/.crontab**
+**/*install_cron**
+{{- end }}
+
+# If this machine does NOT need to do chopin-specific setup
+{{- if not (dig "setup_borgbackups" false $features) }}
 **/.borg/passphrase
-**/.minis_crontab**
-**/*install_minis_cron**
+**/*borg_backup_chopin_cron**
 {{- end }}
 
 # If this machine does NOT have bitwarden:
@@ -93,10 +98,22 @@
 **/.git-credentials
 {{- end }}
 
+# If this machine does NOT have bitwarden:
+{{- if not (dig "setup_btrfs_scrub" false $features) }}
+**/*setup_btrfs_scrub*
+{{- end }}
+
 # If this machine does NOT run within WSL
 {{- if not (dig "runs_within_wsl" false $features) }}
 **/*stabilize_wsl*
 {{- end }}
+
+# If this machine does NOT run within WSL
+{{- if not (dig "setup_chopin_specific" false $features) }}
+**/*syncthing.service.d*
+**/*setup_chopin_health_check*
+{{- end }}
+
 
 # Never ignore those:
 # ssh_copy_id_all

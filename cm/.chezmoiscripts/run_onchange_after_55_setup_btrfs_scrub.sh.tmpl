@@ -1,0 +1,77 @@
+#!/bin/bash
+
+{{ include ".chezmoitemplates/pause_on_error" }}
+
+set -euo pipefail
+
+{{ include ".chezmoitemplates/sudo_keepalive" }}
+sudo_keepalive
+
+echo "🔧 Configuring systemd timer for monthly BTRFS scrub..."
+HC_UUID="{{ (bitwardenFields "item" "healthchecks-chopin-btrfs-scrub").uuid.value }}"
+MOUNTPOINT="/mnt/btr"
+
+# 1. Create the wrapper script
+echo "   -> Creating wrapper script at /usr/local/bin/btrfs-scrub..."
+cat << 'EOF' | sudo tee /usr/local/bin/btrfs-scrub > /dev/null
+#!/bin/bash
+MOUNTPOINT="${1:-/}"
+HC_UUID="$2"
+HC_URL="https://hc-ping.com/$HC_UUID"
+
+# Create a temporary file for the log
+LOG_FILE=$(mktemp)
+trap 'rm -f "$LOG_FILE"' EXIT
+
+# Signal start to Healthchecks
+curl -fsS -m 10 --retry 5 -o /dev/null "$HC_URL/start"
+
+# Run scrub in foreground (-B) with detailed stats (-d).
+# Use 'tee' so the output goes to BOTH the system journal and our temp file.
+btrfs scrub start -Bd "$MOUNTPOINT" 2>&1 | tee "$LOG_FILE"
+
+# Capture the exit code of 'btrfs scrub', NOT 'tee'
+EXIT_CODE=${PIPESTATUS[0]}
+
+# Signal exit code back to Healthchecks and attach the log payload
+tail -c 10000 "$LOG_FILE" | curl -fsS -m 10 --retry 5 -o /dev/null --data-binary @- "$HC_URL/$EXIT_CODE"
+
+exit $EXIT_CODE
+EOF
+
+sudo chmod +x /usr/local/bin/btrfs-scrub
+
+# 2. Create the systemd service
+echo "   -> Creating systemd service..."
+cat << EOF | sudo tee /etc/systemd/system/chopin-btrfs-scrub.service > /dev/null
+[Unit]
+Description=Run BTRFS scrub on $MOUNTPOINT and report to Healthchecks.io
+Requires=mnt-btr.mount
+After=mnt-btr.mount network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/btrfs-scrub $MOUNTPOINT $HC_UUID
+EOF
+
+# 3. Create the systemd timer
+echo "   -> Creating systemd timer..."
+cat << 'EOF' | sudo tee /etc/systemd/system/chopin-btrfs-scrub.timer > /dev/null
+[Unit]
+Description=Monthly BTRFS scrub on chopin
+
+[Timer]
+OnCalendar=*-*-26 02:00:00
+Persistent=true
+RandomizedDelaySec=1h
+
+[Install]
+WantedBy=timers.target
+EOF
+
+# 4. Enable and start the timer
+echo "   -> Reloading systemd and enabling timer..."
+sudo systemctl daemon-reload
+sudo systemctl enable --now chopin-btrfs-scrub.timer
+
+echo "✅ Monthly BTRFS scrub scheduled via systemd."

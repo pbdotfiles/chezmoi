@@ -1,0 +1,87 @@
+#!/bin/bash
+
+#--- BTRFS snippet to change Copy-on-Write status
+target="$1"
+mode="$2" # Expect "cow" or "nocow"
+
+# --- 1. Validation ---
+if [ -z "$target" ] || [ -z "$mode" ]; then
+  echo "Usage: set_cow_mode <directory_path> <cow|nocow>"
+  exit 1
+fi
+
+# Remove trailing slash
+target="${target%/}"
+
+if [ ! -d "$target" ]; then
+  echo "Error: '$target' is not a directory."
+  exit 1
+fi
+
+if [[ "$mode" != "cow" && "$mode" != "nocow" ]]; then
+  echo "Error: Mode must be 'cow' or 'nocow'."
+  exit 1
+fi
+
+temp_target="${target}_TEMP_CONVERSION"
+backup_target="${target}_OLD_BACKUP"
+
+echo "--- Converting '$target' to mode: $mode ---"
+
+# --- 2. Create Temp Directory ---
+mkdir -p "$temp_target"
+
+# Apply Attributes based on mode
+if [ "$mode" == "nocow" ]; then
+  chattr +C "$temp_target"
+  # Verify C flag is present
+  if ! lsattr -d "$temp_target" | awk '{print $1}' | grep -q "C"; then
+    echo "Error: Failed to set +C (NoCoW). Is this Btrfs?"
+    rmdir "$temp_target"
+    exit 1
+  fi
+else
+  # Force Enable CoW (Remove C attribute)
+  # We do this explicitly in case the parent folder has +C and we inherited it.
+  chattr -C "$temp_target"
+  # Verify C flag is NOT present
+  if lsattr -d "$temp_target" | awk '{print $1}' | grep -q "C"; then
+    echo "Error: Failed to ensure CoW mode (Could not remove +C)."
+    rmdir "$temp_target"
+    exit 1
+  fi
+fi
+
+# --- 3. Copy Data ---
+echo "Copying data... (cp -a --reflink=never)"
+# We use --reflink=never to force a physical rewrite of the data blocks
+# so they adhere to the new directory's attribute.
+cp -a --reflink=never "$target/." "$temp_target/"
+
+if [ $? -ne 0 ]; then
+
+  echo "Error during copy. Aborting. Original data untouched."
+  echo "If you need sudo rights to run this script, use this command because set_cow_mode is not in sudo's secure path:"
+  echo "       sudo ~/.local/bin/set_cow_mode <directory_path> <cow|nocow>"
+  rm -rf "$temp_target"
+  exit 1
+fi
+
+# --- 4. Clone Metadata ---
+echo "Cloning ownership, permissions, and timestamps..."
+chown --reference="$target" "$temp_target"
+chmod --reference="$target" "$temp_target"
+
+# --- 5. Swap ---
+mv "$target" "$backup_target"
+mv "$temp_target" "$target"
+
+# Verify the swap happened
+if [ -d "$target" ]; then
+  echo "Success! '$target' is now $mode."
+  rm -rf "$backup_target"
+else
+  echo "CRITICAL ERROR: New folder did not move into place!"
+  echo "Check '$temp_target' and '$backup_target'."
+  exit 1
+fi

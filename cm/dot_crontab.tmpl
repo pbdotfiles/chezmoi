@@ -1,0 +1,19 @@
+# ===============================================================
+# This file is managed by CHEZMOI.
+#
+# The file is loaded with
+# `crontab ~/.crontab`
+# ===============================================================
+
+{{ if eq .chezmoi.hostname "chopin" }}
+
+# Borg backups: create, prune and check for bit rot
+47 2 */3 * * /home/{{ .chezmoi.username }}/.local/share/bin/borg_backup_chopin_cron.sh >/dev/null 2>&1
+
+# Send forecasts downloaded to Google Drive
+18 4 *   * * docker run --rm -v /mnt/btr/unbackuped_data/docker/renewables_forecasts/data/collectForecastsParquet:/app/data -v /mnt/btr/unbackuped_data/docker/renewables_forecasts/data/collectForecastsParquet_archive:/app/archive google_upload --local-folder /app/data --archive-folder /app/archive --drive-folder-id "12OJ7nLQ2pJJueii-zA7QCjaDvTTRjFOb"
+
+{{ end }}
+
+# Send a regular heartbeat to healthchecks.io
+3 * * * * curl -fsS -m 10 --retry 5 -o /dev/null https://hc-ping.com/{{ (bitwardenFields "item" (printf "healthchecks-%s-heartbeat" .chezmoi.hostname)).uuid.value }}

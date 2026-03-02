@@ -9,9 +9,9 @@ sudo_keepalive
 
 sudo apt install -y syncthing
  
-{{- if eq .chezmoi.hostname "minis" }}
-# --- Use existing configuration stored on mx500_4t
-BACKUP_CONFIG_SRC="/mnt/mx500_4t/backuped_data/Paul/home_network/minis/syncthing"
+{{- if eq .chezmoi.hostname "chopin" }}
+# --- Use existing configuration stored on btr
+BACKUP_CONFIG_SRC="/mnt/btr/backuped_data/Paul/home_network/chopin/syncthing"
 LOCAL_CONFIG_DEST="$HOME/.local/state/syncthing"
 
 mkdir -p "$HOME/.local/state"

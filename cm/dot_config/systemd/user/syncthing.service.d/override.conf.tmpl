@@ -1,0 +1,5 @@
+{{- if ne .chezmoi.hostname "chopin" -}}
+{{-   fail (print "Assertion failed: only 'chopin' machine needs the synchting override configuration.") -}}
+{{- end -}}
+[Unit]
+RequiresMountsFor=/mnt/btr

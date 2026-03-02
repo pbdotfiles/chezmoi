@@ -1,0 +1,59 @@
+#!/bin/bash
+
+export BORG_PASSCOMMAND="cat /home/{{ .chezmoi.username }}/.borg/passphrase"
+REPO="ronewg:/mnt/wdd/borgrepo"
+SOURCE="/mnt/btr"
+
+# Healthchecks URLs
+HC_BACKUP="https://hc-ping.com/{{ (bitwardenFields "item" "healthchecks-chopin-borg-backup").uuid.value }}"
+HC_CHECK="https://hc-ping.com/{{ (bitwardenFields "item" "healthchecks-chopin-borg-check").uuid.value }}"
+
+LOG_FILE=$(mktemp)
+trap 'rm -f "$LOG_FILE"' EXIT
+
+# ==========================================
+# PHASE 1: PRUNE & CREATE (Runs every time)
+# ==========================================
+curl -fsS -m 10 --retry 5 -o /dev/null "${HC_BACKUP}/start"
+
+# Run Prune
+borg prune --list --stats --keep-daily=7 --keep-weekly=4 --keep-monthly=6 --keep-yearly=5 "$REPO" > "$LOG_FILE" 2>&1
+PRUNE_EXIT=$?
+
+# Run Create (Only if Prune didn't fatally crash. Warning exit code 1 is okay)
+if [ $PRUNE_EXIT -le 1 ]; then
+    borg create --stats "${REPO}::{now}" "$SOURCE" -v --compression zstd >> "$LOG_FILE" 2>&1
+    CREATE_EXIT=$?
+else
+    CREATE_EXIT=$PRUNE_EXIT
+fi
+
+# Send Backup results to Healthchecks.
+# - Treat "success" (code = 0) and "warning" (code = 1) as success.
+# - Only treat "error" (code = 2) as failure.
+if [ $CREATE_EXIT -le 1 ]; then
+    tail -c 10000 "$LOG_FILE" | curl -fsS -m 10 --retry 5 -o /dev/null --data-binary @- "${HC_BACKUP}"
+else
+    tail -c 10000 "$LOG_FILE" | curl -fsS -m 10 --retry 5 -o /dev/null --data-binary @- "${HC_BACKUP}/${CREATE_EXIT}"
+fi
+
+# ==========================================
+# PHASE 2: CHECK (Runs ONLY on the 1st of the month)
+# ==========================================
+if [ "$(date +%d)" = "01" ]; then
+    # Clear the log file for the check phase
+    > "$LOG_FILE" 
+
+    curl -fsS -m 10 --retry 5 -o /dev/null "${HC_CHECK}/start"
+    
+    borg check "$REPO" > "$LOG_FILE" 2>&1
+    CHECK_EXIT=$?
+
+    if [ $CHECK_EXIT -eq 0 ]; then
+        tail -c 10000 "$LOG_FILE" | curl -fsS -m 10 --retry 5 -o /dev/null --data-binary @- "${HC_CHECK}"
+    else
+        tail -c 10000 "$LOG_FILE" | curl -fsS -m 10 --retry 5 -o /dev/null --data-binary @- "${HC_CHECK}/${CHECK_EXIT}"
+    fi
+fi
+
+exit $CREATE_EXIT

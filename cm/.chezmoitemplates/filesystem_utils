@@ -38,7 +38,7 @@ prepare_mount_point() {
 }
 
 clean_legacy_fstab() {
-    local id="$1" # either UUID or //minis/share
+    local id="$1" # either UUID or //chopin/share
     local mount_path="$2"
     local fstab="/etc/fstab"
 
