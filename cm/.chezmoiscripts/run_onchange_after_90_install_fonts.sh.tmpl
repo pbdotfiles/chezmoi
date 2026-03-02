@@ -26,7 +26,10 @@ wget -q -O font.zip "$URL"
 unzip -o -q -d "${fonts_dir}" font.zip
 rm font.zip
 
-wget -q -P "${fonts_dir}" https://github.com/rbong/flog-symbols/raw/main/FlogSymbols.ttf
+# Workaround the work computer proxy which doesn't allow direct wget download of the font.
+git clone https://github.com/rbong/flog-symbols.git
+cp flog-symbols/FlogSymbols.ttf "${fonts_dir}/FlogSymbols.ttf"
+rm -rf flog-symbols
 
 # Install the font
 fc-cache -f
