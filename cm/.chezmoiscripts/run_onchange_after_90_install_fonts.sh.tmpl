@@ -9,27 +9,31 @@ set -euo pipefail
 #################################################
 
 fonts_dir="${HOME}/.local/share/fonts"
-if [ ! -d "${fonts_dir}" ]; then
-  mkdir -p "${fonts_dir}"
-fi
+mkdir -p "${fonts_dir}"
 
+# Create a secure temporary directory for our downloads
+WORK_DIR=$(mktemp -d)
+# Ensure the temp directory is deleted when the script exits, even on failure
+trap 'rm -rf "$WORK_DIR"' EXIT
+
+echo "Fetching latest JetBrainsMono release info..."
 URL=$(curl -s "https://api.github.com/repos/ryanoasis/nerd-fonts/releases/latest" |
   jq -r '.assets[] | select(.name == "JetBrainsMono.zip") | .browser_download_url')
 
-if [ -z "$URL" ]; then
+if [ -z "$URL" ] || [ "$URL" == "null" ]; then
   echo "Error: Could not find JetBrainsMono.zip in the latest Nerd Fonts release."
   exit 1
 fi
 
-echo "Downloading latest JetBrainsMono version from: $URL"
-wget -q -O font.zip "$URL"
-unzip -o -q -d "${fonts_dir}" font.zip
-rm font.zip
+echo "Downloading latest JetBrainsMono version..."
+curl -sL -o "${WORK_DIR}/font.zip" "$URL"
+unzip -o -q -d "${fonts_dir}" "${WORK_DIR}/font.zip"
 
-# Workaround the work computer proxy which doesn't allow direct wget download of the font.
-git clone https://github.com/rbong/flog-symbols.git
-cp flog-symbols/FlogSymbols.ttf "${fonts_dir}/FlogSymbols.ttf"
-rm -rf flog-symbols
+echo "Fetching FlogSymbols (via git clone to bypass web filters)..."
+git clone -q https://github.com/rbong/flog-symbols.git "${WORK_DIR}/flog-symbols"
+cp "${WORK_DIR}/flog-symbols/FlogSymbols.ttf" "${fonts_dir}/FlogSymbols.ttf"
 
-# Install the font
+echo "Updating font cache..."
 fc-cache -f
+
+echo "Fonts installed successfully!"
