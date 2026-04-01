@@ -82,3 +82,7 @@ export NODE_EXTRA_CA_CERTS="/usr/local/share/ca-certificates/ZscalerRootCA.crt"
 {{- end }}
 
 source ~/.bash_snippets
+
+if [ -f ~/.bash_unmanaged ]; then
+    . ~/.bash_unmanaged
+fi

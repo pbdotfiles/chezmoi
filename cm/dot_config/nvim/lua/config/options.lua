@@ -12,6 +12,21 @@ vim.g.python3_host_prog = vim.fn.expand("~/.local/share/nvim/venv/bin/python")
 -- Use the system clipboard instead of the internal clipboard
 vim.opt.clipboard = "unnamedplus"
 
+-- Use OSC 52 as the clipboard provider.
+-- This works over SSH, through tmux, and in any terminal that supports OSC 52
+-- (Kitty, Windows Terminal, etc.), eliminating the need for xclip/wl-clipboard/win32yank.
+vim.g.clipboard = {
+	name = "OSC 52",
+	copy = {
+		["+"] = require("vim.ui.clipboard.osc52").copy("+"),
+		["*"] = require("vim.ui.clipboard.osc52").copy("*"),
+	},
+	paste = {
+		["+"] = require("vim.ui.clipboard.osc52").paste("+"),
+		["*"] = require("vim.ui.clipboard.osc52").paste("*"),
+	},
+}
+
 -- Make undo persistent : can undo after closing/reopening neovim.
 -- Place all undo files in a single directory, out of sight.
 local undodir = vim.fn.expand("~/.local/state/nvim/undo")
