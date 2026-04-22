@@ -3,7 +3,7 @@ export EDITOR="nvim"
 export VISUAL="nvim"
 
 # --- Launch/Attach tmux automatically, but only if not already inside it
-if [ -z "$TMUX" ] && [ -n "$PS1" ]; then
+if [ -z "$TMUX" ] && [ -n "$PS1" ] && [ -z "$BYPASS_TMUX" ]; then
   if tmux ls >/dev/null 2>&1; then
     # Find the most recently active session
     LAST_SESSION=$(tmux ls -F '#{session_last_attached} #{session_name}' 2>/dev/null | sort -nr | head -n 1 | cut -d' ' -f2-)
