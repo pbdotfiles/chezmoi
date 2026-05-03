@@ -1,71 +1,40 @@
--- ============================================================================
--- Slime & REPL Configuration
---
--- Use `vim-slime` and `vim-slime-cells` plugins + tmux + ipython to reproduce
--- a Spyder-like experience in neovim.
---
--- `check_target` ensures we only send text to a pane running an approved process
--- (ipython, python, or sqlite3).
--- ============================================================================
+local VALID_TARGETS = {
+  "^ipython",
+  "^python",
+  "^sqlite3",
+}
 
-local WHITELIST = { ipython = "python", python = "python", sqlite3 = "sqlite3" }
-
--- Returns target_type, blocked:
---   "python"       = safe, target is ipython or python
---   "sqlite3"      = safe, target is sqlite3
---   nil            = no config / tmux query failed (caller should fall back)
---   nil, true      = blocked (notification already fired, caller should abort)
-local function check_target()
+local function is_target_safe()
   local ok, config = pcall(vim.api.nvim_buf_get_var, 0, "slime_config")
   if not ok then
     ok, config = pcall(vim.api.nvim_get_var, "slime_default_config")
   end
+
   if not ok or not config or not config.target_pane then
-    return nil
+    return true
   end
 
   local target = config.target_pane
   local socket = config.socket_name or "default"
   local cmd = string.format("tmux -L %s display-message -p -t '%s' '#{pane_current_command}'", socket, target)
   local running_cmd = vim.fn.system(cmd):gsub("%s+", "")
+
   if vim.v.shell_error ~= 0 then
-    return nil
+    return true
   end
 
-  for pattern, target_type in pairs(WHITELIST) do
-    if running_cmd:match("^" .. pattern) then
-      return target_type
+  for _, pattern in ipairs(VALID_TARGETS) do
+    if running_cmd:match(pattern) then
+      return true
     end
   end
 
   vim.notify("Slime Blocked: Pane is running '" .. running_cmd .. "'.", vim.log.levels.ERROR)
-  return nil, true
+  return false
 end
 
-local function safe_slime(plug_cmd)
-  local _, blocked = check_target()
-  if blocked then return "<Ignore>" end
-  return plug_cmd
-end
-
-local function safe_slime_run_file()
-  local target_type, blocked = check_target()
-  if blocked then return end
-  if not target_type then vim.cmd("%SlimeSend"); return end
-
-  if target_type == "python" then
-    local filepath = vim.fn.expand("%:p")
-    if filepath == "" then
-      vim.notify("Run File: buffer has no filename", vim.log.levels.WARN)
-      return
-    end
-    if vim.bo.modified then
-      vim.cmd("silent! write")
-    end
-    vim.fn["slime#send"]("%run -i " .. vim.fn.shellescape(filepath))
-  else
-    vim.cmd("%SlimeSend")
-  end
+local function safe_slime_expr(plug_cmd)
+  return is_target_safe() and plug_cmd or "<Ignore>"
 end
 
 return {
@@ -76,13 +45,13 @@ return {
       vim.g.slime_default_config = { socket_name = "default", target_pane = "{bottom-right}" }
       vim.g.slime_dont_ask_default = 0
       vim.g.slime_bracketed_paste = 1
-      vim.g.slime_python_ipython = 1
+      vim.g.slime_python_ipython = 0
     end,
     keys = {
       {
         "<leader>rs",
         function()
-          return safe_slime("<Plug>SlimeRegionSend")
+          return safe_slime_expr("<Plug>SlimeRegionSend")
         end,
         mode = "x",
         expr = true,
@@ -91,7 +60,7 @@ return {
       {
         "<leader>rl",
         function()
-          return safe_slime("<Plug>SlimeLineSend")
+          return safe_slime_expr("<Plug>SlimeLineSend")
         end,
         mode = "n",
         expr = true,
@@ -99,9 +68,13 @@ return {
       },
       {
         "<leader>rf",
-        safe_slime_run_file,
+        function()
+          if is_target_safe() then
+            vim.cmd("%SlimeSend")
+          end
+        end,
         mode = "n",
-        desc = "Run File (%run -i / raw)",
+        desc = "Send Full File",
       },
     },
   },
@@ -116,7 +89,7 @@ return {
       {
         "<leader>rc",
         function()
-          return safe_slime("<Plug>SlimeCellsSend")
+          return safe_slime_expr("<Plug>SlimeCellsSend")
         end,
         expr = true,
         desc = "Send Cell",
@@ -124,7 +97,7 @@ return {
       {
         "<leader>rn",
         function()
-          return safe_slime("<Plug>SlimeCellsSendAndGoToNext")
+          return safe_slime_expr("<Plug>SlimeCellsSendAndGoToNext")
         end,
         expr = true,
         desc = "Send Cell & Next",
