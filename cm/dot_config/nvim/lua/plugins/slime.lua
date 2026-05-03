@@ -4,67 +4,81 @@
 -- Use `vim-slime` and `vim-slime-cells` plugins + tmux + ipython to reproduce
 -- a Spyder-like experience in neovim.
 --
--- The function `safe_slime` ensures we only send text to a pane that matches
--- either the "^ipython" or "^python" pattern.
+-- `check_target` ensures we only send text to a pane running an approved process
+-- (ipython, python, or sqlite3).
 -- ============================================================================
 
-local function safe_slime(plug_cmd)
-  -- Only send text via vim-slime if the target pane runs python.
+local WHITELIST = { ipython = "python", python = "python", sqlite3 = "sqlite3" }
 
-  -- 1. Get the target pane from buffer-local or your global config
+-- Returns target_type, blocked:
+--   "python"       = safe, target is ipython or python
+--   "sqlite3"      = safe, target is sqlite3
+--   nil            = no config / tmux query failed (caller should fall back)
+--   nil, true      = blocked (notification already fired, caller should abort)
+local function check_target()
   local ok, config = pcall(vim.api.nvim_buf_get_var, 0, "slime_config")
   if not ok then
     ok, config = pcall(vim.api.nvim_get_var, "slime_default_config")
   end
-
-  -- If no config exists yet, return the plug command so Slime can prompt you
   if not ok or not config or not config.target_pane then
-    return plug_cmd
+    return nil
   end
 
   local target = config.target_pane
   local socket = config.socket_name or "default"
-
-  -- 2. Query Tmux natively via Neovim
   local cmd = string.format("tmux -L %s display-message -p -t '%s' '#{pane_current_command}'", socket, target)
   local running_cmd = vim.fn.system(cmd):gsub("%s+", "")
-
-  -- If tmux check fails (e.g., pane doesn't exist yet), let Slime handle the error naturally
   if vim.v.shell_error ~= 0 then
-    return plug_cmd
+    return nil
   end
 
-  -- 3. Whitelist
-  local whitelist_patterns = { "^ipython", "^python" }
-
-  for _, pattern in ipairs(whitelist_patterns) do
-    if running_cmd:match(pattern) then
-      return plug_cmd -- Safe to send!
+  for pattern, target_type in pairs(WHITELIST) do
+    if running_cmd:match("^" .. pattern) then
+      return target_type
     end
   end
 
-  -- 4. Block send and warn
   vim.notify("Slime Blocked: Pane is running '" .. running_cmd .. "'.", vim.log.levels.ERROR)
-  return "<Ignore>"
+  return nil, true
+end
+
+local function safe_slime(plug_cmd)
+  local _, blocked = check_target()
+  if blocked then return "<Ignore>" end
+  return plug_cmd
+end
+
+local function safe_slime_run_file()
+  local target_type, blocked = check_target()
+  if blocked then return end
+  if not target_type then vim.cmd("%SlimeSend"); return end
+
+  if target_type == "python" then
+    local filepath = vim.fn.expand("%:p")
+    if filepath == "" then
+      vim.notify("Run File: buffer has no filename", vim.log.levels.WARN)
+      return
+    end
+    if vim.bo.modified then
+      vim.cmd("silent! write")
+    end
+    vim.fn["slime#send"]("%run -i " .. vim.fn.shellescape(filepath))
+  else
+    vim.cmd("%SlimeSend")
+  end
 end
 
 return {
   {
     "jpalardy/vim-slime",
     init = function()
-      -- Tell slime to use tmux
       vim.g.slime_target = "tmux"
-
-      -- Auto-target the pane to the right (so it doesn't prompt you every time)
       vim.g.slime_default_config = { socket_name = "default", target_pane = "{bottom-right}" }
       vim.g.slime_dont_ask_default = 0
-
-      -- Enable bracketed paste so IPython handles indentation perfectly
       vim.g.slime_bracketed_paste = 1
       vim.g.slime_python_ipython = 1
     end,
     keys = {
-      -- Standard visual send keymap
       {
         "<leader>rs",
         function()
@@ -85,11 +99,9 @@ return {
       },
       {
         "<leader>rf",
-        function()
-          return safe_slime("<cmd>%SlimeSend<cr>")
-        end,
-        expr = true,
-        desc = "Send Full File",
+        safe_slime_run_file,
+        mode = "n",
+        desc = "Run File (%run -i / raw)",
       },
     },
   },
@@ -98,7 +110,7 @@ return {
     dependencies = { "jpalardy/vim-slime" },
     ft = "python",
     init = function()
-      vim.g.slime_cell_delimiter = [[#\s*%%]] -- Cell marker
+      vim.g.slime_cell_delimiter = [[#\s*%%]]
     end,
     keys = {
       {
@@ -117,7 +129,6 @@ return {
         expr = true,
         desc = "Send Cell & Next",
       },
-      -- Cell navigation
       { "[c", "<Plug>SlimeCellsPrev", desc = "Previous Cell" },
       { "]c", "<Plug>SlimeCellsNext", desc = "Next Cell" },
     },
