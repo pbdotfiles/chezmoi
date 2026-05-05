@@ -8,6 +8,7 @@ config.front_end = "WebGpu"
 -- =============================================================================
 
 config.default_prog = { "wsl.exe", "--distribution", "ulz" }
+config.default_cwd = "\\\\wsl.localhost\\ulz\\home\\paul"
 
 -- =============================================================================
 -- Font
@@ -93,7 +94,7 @@ config.window_background_opacity = 0.98
 -- resizable by dragging the edges. RESIZE is the cleanest option on Windows.
 -- =============================================================================
 
-config.window_decorations = "RESIZE"
+config.window_decorations = "INTEGRATED_BUTTONS|RESIZE"
 
 -- =============================================================================
 -- Tab bar
@@ -130,5 +131,19 @@ config.window_padding = {
 config.audible_bell = "Disabled"
 config.window_close_confirmation = "NeverPrompt"
 config.check_for_updates = false
+
+-- =============================================================================
+-- Key bindings
+-- =============================================================================
+
+config.keys = {
+	{
+		key = "t",
+		mods = "CTRL|ALT|SHIFT",
+		action = wezterm.action.SpawnCommandInNewWindow({
+			args = { "wsl.exe", "--distribution", "ulz", "--exec", "/usr/bin/env", "BYPASS_TMUX=1", "bash" },
+		}),
+	},
+}
 
 return config
