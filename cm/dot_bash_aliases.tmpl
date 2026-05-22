@@ -25,6 +25,7 @@ eval "$(starship init bash)"
 eval "$(zoxide init bash)"
 eval "$(fzf --bash)"
 alias cd=z
+alias lg=lazygit
 
 # Make fzf use fd for faster, cleaner searches
 export FZF_DEFAULT_COMMAND='fd --type f --type d --strip-cwd-prefix --hidden --follow --exclude .git'
