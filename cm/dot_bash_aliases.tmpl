@@ -35,11 +35,6 @@ complete -F _fzf_complete_z -o nospace -o default -o bashdefault cd
 
 {{- $features := dig .chezmoi.hostname (dict) .hosts_features -}}
 
-{{- if (dig "setup_gui" false $features) }}
-# PyCharm is only installed on GUI machines
-# export PATH="$HOME/.local/share/applications/pycharm-community-2024.2/bin:$PATH"
-{{- end }}
-
 {{- if (dig "setup_nvidia" false $features) }}
 # Nvidia specific aliases
 alias nvidia-limit="sudo nvidia-smi -pm 1 && sudo nvidia-smi -pl 100"
