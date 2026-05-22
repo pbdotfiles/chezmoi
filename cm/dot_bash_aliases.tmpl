@@ -54,23 +54,26 @@ HISTFILESIZE=100000
 shopt -s histappend
 PROMPT_COMMAND="history -a; history -c; history -r; $PROMPT_COMMAND"
 
-#---  NVM Configuration: lazy-loaded
+#---  NVM Configuration: Fast Lazy-Load
 export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
-#_load_nvm() {
-    ## Remove these stubs so they don't loop
-    #unset -f nvm node npm npx
-    ## Load NVM for real
-    #[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-    #[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
-#}
-#
-## Create "stubs" that load NVM only when called
-#nvm()  { _load_nvm; nvm "$@"; }
-#node() { _load_nvm; node "$@"; }
-#npm()  { _load_nvm; npm "$@"; }
-#npx()  { _load_nvm; npx "$@"; }
+
+# 1. Instantly inject the installed Node version into PATH.
+# This fixes Neovim LSPs (which bypass bash aliases) and avoids stubbing `node`/`npm`.
+if [ -d "$NVM_DIR/versions/node" ]; then
+    # Grab the highest installed node version bin directory
+    NODE_DEFAULT_BIN=$(ls -d "$NVM_DIR/versions/node/"*/bin 2>/dev/null | sort -V | tail -n 1)
+    if [ -n "$NODE_DEFAULT_BIN" ]; then
+        export PATH="$NODE_DEFAULT_BIN:$PATH"
+    fi
+fi
+
+# 2. Only load the heavy NVM script if you actually type 'nvm'.
+nvm() {
+    unset -f nvm
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+    nvm "$@"
+}
 
 {{- if eq .chezmoi.hostname "ALFR-CY5VCK3-L" }}
 export NODE_EXTRA_CA_CERTS="/usr/local/share/ca-certificates/ZscalerRootCA.crt"
