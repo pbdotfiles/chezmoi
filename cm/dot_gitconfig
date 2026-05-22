@@ -7,6 +7,7 @@
 
 [core]
 	autocrlf = input
+  excludesfile = ~/.gitignore_global
 
 [alias]
 	# https://github.com/hilbix/gitstart/blob/master/aliases.sh
