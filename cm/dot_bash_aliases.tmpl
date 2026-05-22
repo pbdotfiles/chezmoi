@@ -81,7 +81,9 @@ export NVM_DIR="$HOME/.nvm"
 export NODE_EXTRA_CA_CERTS="/usr/local/share/ca-certificates/ZscalerRootCA.crt"
 {{- end }}
 
+source "$HOME/miniforge3/etc/profile.d/conda.sh"
 source ~/.bash_snippets
+source ~/.bash_pbenv
 
 if [ -f ~/.bash_unmanaged ]; then
     . ~/.bash_unmanaged

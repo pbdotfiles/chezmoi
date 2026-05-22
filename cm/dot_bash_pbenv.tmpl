@@ -1,0 +1,77 @@
+# =============================================================================
+# Recursively look for a .pbenv.sh file and source it securely on shell startup
+# =============================================================================
+
+export PBENV_AUTH_FILE="$HOME/.local/state/pbenv_trusted"
+
+# Helper function to hash content portably (Linux & macOS)
+_pbenv_hash_file() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | awk '{print $1}'
+  elif command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$1" | awk '{print $1}'
+  else
+    return 1
+  fi
+}
+
+_apply_sticky_env() {
+  local search_dir="$PWD"
+
+  while [ "$search_dir" != "/" ]; do
+    if [ -f "$search_dir/.pbenv.sh" ]; then
+      local env_file="$search_dir/.pbenv.sh"
+      local env_hash
+
+      env_hash=$(_pbenv_hash_file "$env_file") || {
+        printf "\033[31m❌ [pbenv] No hashing utility found (sha256sum/shasum).\033[0m\n"
+        return 1
+      }
+
+      # Bind the specific absolute path to the hash for tight security
+      local trust_token
+      trust_token=$(printf "%s : %s" "$env_file" "$env_hash")
+
+      # Check if the path:hash token is in the trusted list
+      if [ -f "$PBENV_AUTH_FILE" ] && grep -Fq "$trust_token" "$PBENV_AUTH_FILE"; then
+        source "$env_file"
+      else
+        printf "\033[31m⚠️  [pbenv] Blocked untrusted or modified file: %s\033[0m\n" "$env_file"
+        printf "\033[33m    Review the file, then run 'trust_pbenv' to approve it.\033[0m\n"
+      fi
+
+      return 0
+    fi
+    search_dir="$(dirname "$search_dir")"
+  done
+}
+
+trust_pbenv() {
+  if [ ! -f .pbenv.sh ]; then
+    printf "❌ No .pbenv.sh found in the current directory.\n"
+    return 1
+  fi
+
+  local env_file="$PWD/.pbenv.sh"
+  local env_hash
+  env_hash=$(_pbenv_hash_file "$env_file")
+
+  local trust_token
+  trust_token=$(printf "%s : %s" "$env_file" "$env_hash")
+
+  mkdir -p "$(dirname "$PBENV_AUTH_FILE")"
+  touch "$PBENV_AUTH_FILE"
+
+  # Only append if it's not already trusted to prevent file bloat
+  if grep -Fq "$trust_token" "$PBENV_AUTH_FILE"; then
+    printf "✅ This version of .pbenv.sh is already trusted.\n"
+  else
+    echo "$trust_token" >>"$PBENV_AUTH_FILE"
+    printf "✅ Trusted .pbenv.sh. Loading environment...\n"
+  fi
+
+  source .pbenv.sh
+}
+
+# Run once on shell startup
+_apply_sticky_env
