@@ -82,3 +82,5 @@ Session.vim
 
 # PyCharm / IntelliJ
 .idea/
+
+.pbenv.sh
