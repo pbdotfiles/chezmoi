@@ -1,0 +1,22 @@
+#!/bin/bash
+
+{{ include ".chezmoitemplates/pause_on_error" }}
+
+set -euo pipefail
+
+# 1. Install Pixi globally if not found
+if ! command -v pixi &>/dev/null; then
+  echo "🚀 Pixi not found. Starting installation..."
+  curl -fsSL https://pixi.sh/install.sh | bash
+
+  echo "✅ Pixi installed successfully."
+else
+  echo "✅ Pixi is already installed."
+fi
+
+# 2. Link the binary cleanly to your user local bin path
+mkdir -p "$HOME/.local/bin"
+ln -sf "$HOME/.pixi/bin/pixi" "$HOME/.local/bin/pixi"
+
+# 3. Ensure base named environments directory exists
+mkdir -p "$HOME/.pixi_envs"

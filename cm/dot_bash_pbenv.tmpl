@@ -16,6 +16,11 @@ _pbenv_hash_file() {
 }
 
 _apply_sticky_env() {
+  # GUARD: If a Pixi environment is already active, do not source .pbenv.sh again.
+  if [ -n "${PIXI_ENVIRONMENT_NAME:-}" ]; then
+    return 0
+  fi
+
   local search_dir="$PWD"
 
   while [ "$search_dir" != "/" ]; do

@@ -23,10 +23,9 @@
 **/*install_fonts*
 {{- end }}
 
-# If this machine does NOT need Server utils:
-{{- if not (dig "setup_conda" false $features) }}
-**/.condarc
-**/*setup_miniforge*
+# If this machine does NOT need pixi:
+{{- if not (dig "setup_pixi" false $features) }}
+**/*setup_pixi*
 {{- end }}
 
 # If this machine does NOT need Server utils:

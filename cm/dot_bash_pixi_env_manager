@@ -1,0 +1,125 @@
+#--- Named Pixi Environments Manager (In-Place Mutation Edition)
+# Usage: pe <command> [args]
+pe() {
+  local env_dir="$HOME/.pixi_envs"
+  mkdir -p "$env_dir"
+
+  local cmd="${1:-}"
+  case "$cmd" in
+  list)
+    echo "Available Pixi Named Environments:"
+    echo "----------------------------------"
+    [ -d "$env_dir" ] && ls -1 "$env_dir"
+    ;;
+  create)
+    if [ -z "${2:-}" ]; then
+      echo "Usage: pe create <env_name>"
+      return 1
+    fi
+    local target="$env_dir/$2"
+    if [ -d "$target" ]; then
+      echo "❌ Environment '$2' already exists."
+      return 1
+    fi
+    mkdir -p "$target"
+    (cd "$target" && pixi init .)
+    echo "✅ Created environment '$2'."
+    ;;
+  shell | activate)
+    if [ -z "${2:-}" ]; then
+      echo "Usage: pe activate <env_name>"
+      return 1
+    fi
+
+    local target_dir="$env_dir/$2"
+    local target="$target_dir/pixi.toml"
+    local lockfile="$target_dir/pixi.lock"
+    local hook_cache="$target_dir/.hook_cache.sh"
+
+    if [ ! -f "$target" ]; then
+      echo "❌ Environment '$2' does not exist."
+      return 1
+    fi
+
+    # Save the pristine system PATH
+    if [ -z "${_OLD_PIXI_PATH:-}" ]; then
+      export _OLD_PIXI_PATH="$PATH"
+    fi
+
+    # --- CACHING LOGIC ---
+    local needs_update=0
+
+    # Check if cache is missing or older than the config files
+    if [ ! -f "$hook_cache" ]; then
+      needs_update=1
+    elif [ "$target" -nt "$hook_cache" ]; then
+      needs_update=1
+    elif [ -f "$lockfile" ] && [ "$lockfile" -nt "$hook_cache" ]; then
+      needs_update=1
+    fi
+
+    # Regenerate the cache only if necessary
+    if [ $needs_update -eq 1 ]; then
+      pixi shell-hook --manifest-path "$target" >"$hook_cache"
+    fi
+
+    # Source the cached hook (instant)
+    source "$hook_cache"
+    ;;
+  deactivate)
+    if [ -n "${_OLD_PIXI_PATH:-}" ]; then
+      # Rollback environment mutations cleanly
+      export PATH="$_OLD_PIXI_PATH"
+      unset _OLD_PIXI_PATH
+      unset CONDA_PREFIX
+      unset CONDA_DEFAULT_ENV
+      unset PIXI_ENVIRONMENT_NAME
+      unset PIXI_PROJECT_ROOT
+      echo "💤 Environment deactivated. Original PATH restored."
+    else
+      echo "❌ No active in-place environment detected to deactivate."
+    fi
+    ;;
+  add)
+    if [ -z "${2:-}" ] || [ -z "${3:-}" ]; then
+      echo "Usage: pe add <env_name> <package1> [package2 ...]"
+      return 1
+    fi
+    shift 1
+    pixi add --manifest-path "$env_dir/$1/pixi.toml" "${@:2}"
+    ;;
+  remove)
+    if [ -z "${2:-}" ] || [ -z "${3:-}" ]; then
+      echo "Usage: pe remove <env_name> <package1> [package2 ...]"
+      return 1
+    fi
+    shift 1
+    pixi remove --manifest-path "$env_dir/$1/pixi.toml" "${@:2}"
+    ;;
+  *)
+    echo "Pixi Environment Manager"
+    echo "Usage:"
+    echo "  pe list                       List all environments"
+    echo "  pe create <name>              Create a new environment"
+    echo "  pe activate <name>            Activate an environment instantly (alias: pe shell)"
+    echo "  pe deactivate                 Deactivate the active environment"
+    echo "  pe add <name> [pkgs...]       Add packages"
+    echo "  pe remove <name> [pkgs...]    Remove packages"
+    ;;
+  esac
+}
+
+_pe_completion() {
+  local cur=${COMP_WORDS[COMP_CWORD]}
+  local prev=${COMP_WORDS[COMP_CWORD - 1]}
+  local env_dir="$HOME/.pixi_envs"
+
+  if [[ "$prev" == "shell" || "$prev" == "activate" || "$prev" == "add" || "$prev" == "remove" ]]; then
+    local envs=""
+    [ -d "$env_dir" ] && envs=$(ls -1 "$env_dir" 2>/dev/null)
+    COMPREPLY=($(compgen -W "$envs" -- "$cur"))
+  elif [[ "$COMP_CWORD" -eq 1 ]]; then
+    COMPREPLY=($(compgen -W "list create shell activate deactivate add remove" -- "$cur"))
+  fi
+}
+complete -F _pe_completion pe

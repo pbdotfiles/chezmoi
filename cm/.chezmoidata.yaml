@@ -7,7 +7,7 @@
 # setup_nvidia:       Installs proprietary NVIDIA drivers and tools
 # setup_smb_share:    Mounts the specific 'chopin' Samba share
 # setup_docker:
-# setup_conda:
+# setup_pixi:
 # =============================================================================
 
 hosts_features:
@@ -30,7 +30,7 @@ hosts_features:
     setup_wireguard: false
     setup_nvidia: false
     setup_smb_share: false
-    setup_conda: true
+    setup_pixi: true
     setup_nfs_share: true
     setup_syncthing: true
     has_bitwarden: true
@@ -43,7 +43,7 @@ hosts_features:
     setup_nvidia: false
     setup_smb_share: false
     setup_nfs_share: true
-    setup_conda: true
+    setup_pixi: true
     setup_docker: true
     setup_syncthing: true
     has_bitwarden: true
@@ -55,7 +55,7 @@ hosts_features:
     setup_wireguard: false
     setup_nvidia: false
     setup_smb_share: false
-    setup_conda: true
+    setup_pixi: true
     setup_docker: true
     setup_syncthing: true
     has_bitwarden: true
@@ -70,7 +70,7 @@ hosts_features:
     setup_smb_server: true
     setup_nfs_share: false
     setup_nfs_server: true
-    setup_conda: true
+    setup_pixi: true
     setup_docker: true
     setup_crontab: true
     setup_syncthing: true
@@ -87,7 +87,7 @@ hosts_features:
     setup_nvidia: false
     setup_smb_share: false
     setup_smb_server: true
-    setup_conda: true
+    setup_pixi: true
     setup_docker: true
     setup_chopin_specific: true
     setup_syncthing: true
@@ -101,7 +101,7 @@ hosts_features:
     setup_nvidia: false
     setup_smb_share: false
     setup_smb_server: false
-    setup_conda: true
+    setup_pixi: true
     setup_docker: true
     setup_syncthing: false
     has_bitwarden: false
