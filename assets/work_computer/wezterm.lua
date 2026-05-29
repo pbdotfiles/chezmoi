@@ -7,8 +7,11 @@ config.front_end = "WebGpu"
 -- Default program
 -- =============================================================================
 
-config.default_prog = { "wsl.exe", "--distribution", "ulz" }
-config.default_cwd = "\\\\wsl.localhost\\ulz\\home\\paul"
+--old
+--config.default_prog = { "wsl.exe", "--distribution", "ulz" }
+--config.default_cwd = "\\\\wsl.localhost\\ulz\\home\\paul"
+--new
+config.default_domain = "WSL:ulz"
 
 -- =============================================================================
 -- Font
@@ -141,9 +144,9 @@ config.keys = {
 		key = "t",
 		mods = "CTRL|ALT|SHIFT",
 		action = wezterm.action.SpawnCommandInNewWindow({
-			args = { "wsl.exe", "--distribution", "ulz", "--exec", "/usr/bin/env", "BYPASS_TMUX=1", "bash" },
+			domain = { DomainName = "WSL:ulz" },
+			args = { "/usr/bin/env", "BYPASS_TMUX=1", "bash" },
 		}),
 	},
 }
-
 return config

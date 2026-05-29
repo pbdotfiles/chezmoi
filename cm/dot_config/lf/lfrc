@@ -1,0 +1,12 @@
+# Define a custom command to save the path and quit
+cmd quit_cd ${{
+    # Write current dir to the file
+    echo "$PWD" > "${LF_CWD_FILE:-/dev/null}"
+
+    # Tell the current lf instance to quit
+    lf -remote "send $id quit"
+}}
+
+# Bind the keys
+map q quit_cd
+map Q quit
