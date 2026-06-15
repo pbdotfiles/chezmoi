@@ -29,7 +29,12 @@ Git is required. If there is no git repository, tell the user.
 
 4. **Resolve mode.** Default to TWO-STEPS (reviewer sketches their own approach before seeing the diff). Use ONE-STEP when the user says `quick`, `fast`, or `single-step`.
 
-5. **Resolve reviewer.** Default inherits the main agent's model via the `review-code` subagent. If the user says `glm` or `glm-5.1`, use `review-code-glm`. These are subagent names — use the resolved name as the `subagent_type` in the `task` call in step 6.
+5. **Resolve reviewer.** Default inherits the main agent's model via the `review-code` subagent. Otherwise resolve by keyword:
+   - `glm` / `glm-5.1` → `review-code-glm`
+   - `deepseek` / `deepseek-v4-pro` / `v4-pro` → `review-code-deepseek`
+   - `minimax` / `minimax-m3` / `m3` → `review-code-minimax`
+   
+   These are subagent names — use the resolved name as the `subagent_type` in the `task` call in step 6.
 
 6. **Launch a single subagent call** with the `task` tool:
    - `subagent_type` — resolved reviewer name

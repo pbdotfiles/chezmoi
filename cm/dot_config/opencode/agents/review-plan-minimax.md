@@ -1,7 +1,7 @@
 ---
-description: Adversarial plan reviewer using GLM. Finds blind spots, architectural risks, untested assumptions, and feasibility issues. Builds an independent plan blind before comparing (TWO-STEPS), or mentally analyzes before critiquing (ONE-STEP).
+description: Adversarial plan reviewer using MiniMax-M3. Finds blind spots, architectural risks, untested assumptions, and feasibility issues. Builds an independent plan blind before comparing (TWO-STEPS), or mentally analyzes before critiquing (ONE-STEP).
 mode: subagent
-model: opencode-go/glm-5.1
+model: opencode-go/minimax-m3
 temperature: 0.2
 permission:
   read: allow

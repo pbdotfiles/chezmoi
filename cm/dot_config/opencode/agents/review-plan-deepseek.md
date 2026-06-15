@@ -1,7 +1,7 @@
 ---
-description: Adversarial plan reviewer using GLM. Finds blind spots, architectural risks, untested assumptions, and feasibility issues. Builds an independent plan blind before comparing (TWO-STEPS), or mentally analyzes before critiquing (ONE-STEP).
+description: Adversarial plan reviewer using DeepSeek. Finds blind spots, architectural risks, untested assumptions, and feasibility issues. Builds an independent plan blind before comparing (TWO-STEPS), or mentally analyzes before critiquing (ONE-STEP).
 mode: subagent
-model: opencode-go/glm-5.1
+model: opencode-go/deepseek-v4-pro
 temperature: 0.2
 permission:
   read: allow
