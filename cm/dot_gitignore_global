@@ -84,3 +84,4 @@ Session.vim
 .idea/
 
 .pbenv.sh
+.opencode/
