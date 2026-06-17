@@ -1,7 +1,7 @@
 ---
-description: Adversarial plan reviewer using GLM 5.2. Finds blind spots, architectural risks, untested assumptions, and feasibility issues. Builds an independent plan blind before comparing (TWO-STEPS), or mentally analyzes before critiquing (ONE-STEP).
+description: Adversarial reviewer for implementation plans using Qwen 3.7 Plus. Finds blind spots, architectural risks, untested assumptions, and feasibility issues. Builds an independent plan blind before comparing (TWO-STEPS), or mentally analyzes before critiquing (ONE-STEP).
 mode: subagent
-model: opencode-go/glm-5.2
+model: opencode-go/qwen3.7-plus
 temperature: 0.2
 permission:
   read: allow

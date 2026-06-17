@@ -11,13 +11,15 @@ When the user explicitly asks for a review of an implementation plan.
 
 1. **Extract the plan and problem statement** from the conversation. The plan is whatever you and the user have discussed — the architecture, steps, tradeoffs, decisions. The problem statement is the user's goal, distilled without your solution ideas. Include relevant constraints (language, framework, dependencies).
 
-2. **Resolve reviewer**:
-   - `glm` / `glm-5.1` → `review-plan-glm`
-   - `deepseek` / `deepseek-v4-pro` / `v4-pro` → `review-plan-deepseek`
-   - `minimax` / `minimax-m3` / `m3` → `review-plan-minimax`
-   - otherwise → `review-plan`
-   
-   These are subagent names — use the resolved name as the `subagent_type` in the `task` call in step 4.
+2. **Resolve reviewer**. Default is `review-plan` (inherits the main agent's model). Otherwise, pick the agent whose model best matches what the user named — match loosely, then use the resolved name as `subagent_type` in step 4. The available agents are:
+
+   - `review-plan-glm` — opencode-go/glm-5.2
+   - `review-plan-deepseek` — opencode-go/deepseek-v4-pro
+   - `review-plan-minimax` — opencode-go/minimax-m3
+   - `review-plan-qwen3.7-plus` — opencode-go/qwen3.7-plus
+   - `review-plan-qwen3.7-max` — opencode-go/qwen3.7-max
+
+   Examples: `glm` or `glm-5.2` → `review-plan-glm`; `qwen` or `qwen plus` or `qwen 3.7 plus` → `review-plan-qwen3.7-plus`; `qwen max` or `qwen 3.7 max` → `review-plan-qwen3.7-max`.
 
 3. **Resolve mode**. There are two modes: TWO-STEPS (reviewer builds an alternative plan blind, then compares) and ONE-STEP (reviewer reads the plan and critiques it directly). Default to TWO-STEPS. Use ONE-STEP only when the user explicitly asked for a single-step review.
 

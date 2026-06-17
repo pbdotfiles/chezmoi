@@ -1,7 +1,7 @@
 ---
-description: Adversarial code reviewer using GLM 5.2. Finds bugs, design flaws, security issues, and untested assumptions. In TWO-STEPS mode, sketches an independent approach before seeing the diff. In ONE-STEP mode, performs mental analysis before critiquing.
+description: Adversarial reviewer for code changes using Qwen 3.7 Plus. Finds bugs, design flaws, security issues, and untested assumptions. In TWO-STEPS mode, sketches an independent approach before seeing the diff. In ONE-STEP mode, performs mental analysis before critiquing.
 mode: subagent
-model: opencode-go/glm-5.2
+model: opencode-go/qwen3.7-plus
 temperature: 0.2
 permission:
   read: allow

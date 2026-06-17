@@ -29,12 +29,15 @@ Git is required. If there is no git repository, tell the user.
 
 4. **Resolve mode.** Default to TWO-STEPS (reviewer sketches their own approach before seeing the diff). Use ONE-STEP when the user says `quick`, `fast`, or `single-step`.
 
-5. **Resolve reviewer.** Default inherits the main agent's model via the `review-code` subagent. Otherwise resolve by keyword:
-   - `glm` / `glm-5.1` → `review-code-glm`
-   - `deepseek` / `deepseek-v4-pro` / `v4-pro` → `review-code-deepseek`
-   - `minimax` / `minimax-m3` / `m3` → `review-code-minimax`
-   
-   These are subagent names — use the resolved name as the `subagent_type` in the `task` call in step 6.
+5. **Resolve reviewer.** Default inherits the main agent's model via the `review-code` subagent. Otherwise, pick the agent whose model best matches what the user named — match loosely, then use the resolved name as `subagent_type` in step 6. The available agents are:
+
+   - `review-code-glm` — opencode-go/glm-5.2
+   - `review-code-deepseek` — opencode-go/deepseek-v4-pro
+   - `review-code-minimax` — opencode-go/minimax-m3
+   - `review-code-qwen3.7-plus` — opencode-go/qwen3.7-plus
+   - `review-code-qwen3.7-max` — opencode-go/qwen3.7-max
+
+   Examples: `glm` or `glm-5.2` → `review-code-glm`; `qwen` or `qwen plus` or `qwen 3.7 plus` → `review-code-qwen3.7-plus`; `qwen max` or `qwen 3.7 max` → `review-code-qwen3.7-max`.
 
 6. **Launch a single subagent call** with the `task` tool:
    - `subagent_type` — resolved reviewer name
