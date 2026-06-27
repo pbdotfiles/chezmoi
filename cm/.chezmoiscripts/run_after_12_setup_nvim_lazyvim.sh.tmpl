@@ -4,8 +4,16 @@
 
 set -euo pipefail
 
+{{ include ".chezmoitemplates/tls_env" }}
+{{- $is_suse := eq (include ".chezmoitemplates/is_suse" | trim) "true" -}}
+
+# Skip sudo_keepalive on OpenSUSE — no root access on these hosts.
+{{- if $is_suse }}
+echo "[nvim setup] OpenSUSE/SLES detected; sudo_keepalive skipped"
+{{- else }}
 {{ include ".chezmoitemplates/sudo_keepalive" }}
 sudo_keepalive
+{{- end }}
 
 echo "======================================================="
 echo "  Setting up Neovim (Stable) + LazyVim + NVM  "
@@ -23,23 +31,29 @@ if command -v fdfind >/dev/null 2>&1 && ! command -v fd >/dev/null 2>&1; then
 fi
 
 echo "FZF installation..."
-# Remove apt-installed fzf if present (it's usually too old)
-if dpkg -l | grep -q "^ii.*fzf"; then
+# Remove apt-installed fzf if present (too old). `command -v dpkg` makes this a no-op on non-Debian.
+if command -v dpkg >/dev/null 2>&1 && dpkg -l | grep -q "^ii.*fzf"; then
     echo "⚠️  Found apt-installed fzf. Removing it to ensure latest version..."
     sudo apt remove -y fzf
 fi
-# Install/Update FZF from Git
+# Install/Update FZF from Git.
 if [ -d "$HOME/.fzf" ]; then
-    echo "🔄 Updating existing FZF..."
-    cd "$HOME/.fzf" && git pull && ./install --all --no-bash --no-zsh --no-fish
+    if ( cd "$HOME/.fzf" && git rev-parse --git-dir >/dev/null 2>&1 ); then
+        echo "🔄 Updating existing FZF..."
+        ( cd "$HOME/.fzf" && git pull && ./install --all --no-bash --no-zsh --no-fish --no-nushell )
+    else
+        echo "⚠️  Existing ~/.fzf is not a valid git repo (previous run interrupted?). Re-cloning..."
+        rm -rf "$HOME/.fzf"
+        git clone --depth 1 https://github.com/junegunn/fzf.git "$HOME/.fzf"
+        "$HOME/.fzf/install" --all --no-bash --no-zsh --no-fish --no-nushell
+    fi
 else
     echo "✨ Installing FZF (Fresh)..."
     git clone --depth 1 https://github.com/junegunn/fzf.git "$HOME/.fzf"
-    "$HOME/.fzf/install" --all --no-bash --no-zsh --no-fish
+    "$HOME/.fzf/install" --all --no-bash --no-zsh --no-fish --no-nushell
 fi
 
 # Ensure the binary is symlinked to your user bin
-mkdir -p "$HOME/.local/bin"
 ln -sf "$HOME/.fzf/bin/fzf" "$HOME/.local/bin/fzf"
 
 echo "✅ FZF Setup Complete."
@@ -99,14 +113,15 @@ nvm install --lts
 nvm use --lts
 nvm alias default 'lts/*'
 
-{{- if eq .chezmoi.hostname "ALFR-CY5VCK3-L" }}
-ZSCALER_CERT="/usr/local/share/ca-certificates/ZscalerRootCA.crt"
-export NODE_EXTRA_CA_CERTS="$ZSCALER_CERT"
-npm config set cafile "$ZSCALER_CERT"
+# Persist CA bundle for npm-driven nvim/mason/Copilot invocations.
+if [ -n "${SYSTEM_CA_BUNDLE:-}" ]; then
+    npm config set cafile "$SYSTEM_CA_BUNDLE"
+    # also disable strict-ssl for compatibility with corporate TLS inspection
+    npm config set strict-ssl false
+fi
 
-# Bypass remaining SSL checks and ensure we use NVM local paths
-npm config set strict-ssl false
-
+{{- $features := dig .chezmoi.hostname (dict) .hosts_features -}}
+{{- if dig "runs_within_wsl" false $features }}
 # Remove xclip and wl-clipboard to force using win32yank (to be installed manually at the moment)
 sudo apt remove -y xclip wl-clipboard
 {{- end }}
@@ -144,8 +159,8 @@ else
     # Extract just the binary
     tar xf lazygit.tar.gz lazygit
 
-    # Install to bin
-    install lazygit "$BIN_DIR"
+    # Use absolute path to avoid `./install` shims (e.g. fzf's).
+    /usr/bin/install lazygit "$BIN_DIR"
 
     # Cleanup
     rm lazygit.tar.gz lazygit
@@ -155,11 +170,23 @@ fi
 # -----------------------------------------------------------------------------
 # 3. INSTALL NEOVIM (LATEST STABLE BINARY)
 # -----------------------------------------------------------------------------
-# Uses the binary tarball to avoid AppImage FUSE issues and startup lag.
 
-NVIM_INSTALL_PATH="$HOME/.local/share/nvim-linux-x86_64"
 BIN_DIR="$HOME/bin"
 mkdir -p "$BIN_DIR"
+
+{{- if $is_suse }}
+# OpenSUSE: older glibc cannot run the official tarball. Use conda-forge via pixi.
+echo "📥 Installing Neovim via pixi (conda-forge)..."
+if ! command -v pixi >/dev/null 2>&1; then
+    echo "⚠️  pixi not yet installed. Run 'chezmoi apply' again after pixi is ready."
+    exit 0
+fi
+pixi global install nvim
+ln -sf "$HOME/.pixi/bin/nvim" "$BIN_DIR/nvim"
+{{- else }}
+# Ubuntu / WSL / others: official stable tarball from GitHub. Uses the binary
+# tarball to avoid AppImage FUSE issues and startup lag.
+NVIM_INSTALL_PATH="$HOME/.local/share/nvim-linux-x86_64"
 
 echo "📥 Fetching Neovim Stable..."
 # Removing old install to ensure clean update
@@ -173,9 +200,9 @@ curl -LO https://github.com/neovim/neovim/releases/download/stable/nvim-linux-x8
 tar -xzf nvim-linux-x86_64.tar.gz -C "$HOME/.local/share/"
 rm nvim-linux-x86_64.tar.gz
 
-# Link binary
+# Symlink to ~/bin (on PATH via ~/.bash_aliases)
 ln -sf "$NVIM_INSTALL_PATH/bin/nvim" "$BIN_DIR/nvim"
-sudo ln -sf "$NVIM_INSTALL_PATH/bin/nvim" "/usr/local/bin/nvim"
+{{- end }}
 
 echo "✅ Neovim Stable installed to $BIN_DIR/nvim"
 "$BIN_DIR/nvim" --version | head -n 1
@@ -203,7 +230,7 @@ mkdir -p "$CONFIG_DIR"
 #    This preserves your Chezmoi files (lua/config/keymaps.lua, etc)
 #    while filling in the rest of the LazyVim structure.
 echo "🔄 Merging LazyVim starter with your dotfiles..."
-cp -r --update=none "$TEMP_DIR/." "$CONFIG_DIR/" || true
+cp -rn "$TEMP_DIR/." "$CONFIG_DIR/" || true
 
 # Cleanup
 rm -rf "$TEMP_DIR"

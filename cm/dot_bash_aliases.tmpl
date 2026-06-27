@@ -1,9 +1,14 @@
-export PATH="$HOME/.local/bin:$HOME/bin:$PATH"
+export PATH="$HOME/.local/bin:$HOME/bin:$HOME/.pixi/bin:$PATH"
 export EDITOR="nvim"
 export VISUAL="nvim"
 
-# --- Launch/Attach tmux automatically, but only if not already inside it
-if [ -z "$TMUX" ] && [ -n "$PS1" ] && [ -z "$BYPASS_TMUX" ]; then
+# TLS proxy detection (see .chezmoitemplates/tls_env).
+{{ include ".chezmoitemplates/tls_env" }}
+{{- $is_suse := eq (include ".chezmoitemplates/is_suse" | trim) "true" -}}
+
+# Auto-attach tmux (disabled on OpenSUSE remote hosts — tmux nesting risk).
+{{- if not $is_suse }}
+if [ -z "$TMUX" ] && [ -n "$PS1" ] && [ -z "$BYPASS_TMUX" ] && command -v tmux &>/dev/null; then
   if tmux ls >/dev/null 2>&1; then
     # Find the most recently active session
     LAST_SESSION=$(tmux ls -F '#{session_last_attached} #{session_name}' 2>/dev/null | sort -nr | head -n 1 | cut -d' ' -f2-)
@@ -20,6 +25,7 @@ if [ -z "$TMUX" ] && [ -n "$PS1" ] && [ -z "$BYPASS_TMUX" ]; then
     exec tmux new -s main -c "$PWD"
   fi
 fi
+{{- end }}
 
 eval "$(starship init bash)"
 eval "$(zoxide init bash)"
@@ -75,10 +81,6 @@ nvm() {
     [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
     nvm "$@"
 }
-
-{{- if eq .chezmoi.hostname "ALFR-CY5VCK3-L" }}
-export NODE_EXTRA_CA_CERTS="/usr/local/share/ca-certificates/ZscalerRootCA.crt"
-{{- end }}
 
 source ~/.bash_pixi_env_manager
 source ~/.bash_snippets

@@ -2,6 +2,18 @@
 # LOAD HOST-SPECIFIC FEATURES
 # -----------------------------------------------------------------------------
 {{- $features := dig .chezmoi.hostname (dict) .hosts_features -}}
+{{- $is_suse := eq (include ".chezmoitemplates/is_suse" | trim) "true" -}}
+
+# Managed ~/.bashrc: deployed ONLY on OpenSUSE workstations where the distro
+# default ~/.bashrc does not source ~/.bash_aliases.
+{{- if not $is_suse }}
+.bashrc
+{{- end }}
+
+# User-space dev-tools installer is OpenSUSE-workstation only (pixi global).
+{{- if not $is_suse }}
+**/*setup_user_space_dev*
+{{- end }}
 
 # If this machine does NOT need GUI tools:
 {{- if not (dig "setup_gui" false $features) }}
@@ -23,8 +35,8 @@
 **/*install_fonts*
 {{- end }}
 
-# If this machine does NOT need pixi:
-{{- if not (dig "setup_pixi" false $features) }}
+# If this machine does NOT need pixi (OpenSUSE workstations DO want pixi).
+{{- if and (not (dig "setup_pixi" false $features)) (not $is_suse) }}
 **/*setup_pixi*
 {{- end }}
 
@@ -113,6 +125,12 @@
 **/*setup_chopin_health_check*
 {{- end }}
 
+
+# OpenSUSE workstations: no root, no apt, no local storage mounts.
+{{- if $is_suse }}
+**/*setup_apt_common*
+**/*local_storage*
+{{- end }}
 
 # Never ignore those:
 # ssh_copy_id_all

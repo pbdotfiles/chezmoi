@@ -1,0 +1,12 @@
+# chezmoi-managed ~/.bashrc for OpenSUSE. Sources system bashrc then ~/.bash_aliases.
+
+# Source the distro-wide bashrc if present (gives us /etc/bash.bashrc defaults
+# like completion, LS_COLORS, etc.).
+if [ -f /etc/bash.bashrc ]; then
+    . /etc/bash.bashrc
+fi
+
+# Source the user-managed dotfiles.
+if [ -f ~/.bash_aliases ]; then
+    . ~/.bash_aliases
+fi

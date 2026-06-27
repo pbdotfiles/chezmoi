@@ -1,0 +1,35 @@
+# Detects corporate TLS proxies by file-existence. Exports CA bundle paths for
+# tools with bundled CA stores (npm, pip, requests, curl, git). No-op otherwise.
+
+# Locate the system CA bundle (SUSE: /etc/ssl/ca-bundle.pem, Debian/Ubuntu:
+# /etc/ssl/certs/ca-certificates.crt, RHEL/Fedora: /etc/pki/tls/certs/ca-bundle.crt).
+SYSTEM_CA_BUNDLE=""
+for _b in \
+    /etc/ssl/ca-bundle.pem \
+    /etc/ssl/certs/ca-certificates.crt \
+    /etc/pki/tls/certs/ca-bundle.crt ; do
+    if [ -f "$_b" ]; then
+        SYSTEM_CA_BUNDLE="$_b"
+        break
+    fi
+done
+unset _b
+
+# "Behind proxy" if one of the known root certs is present.
+BEHIND_ZSCALER=0
+for _c in \
+    /etc/ssl/certs/*Root_CA.pem \
+    /usr/local/share/ca-certificates/*RootCA.crt ; do
+    [ -f "$_c" ] || continue
+    BEHIND_ZSCALER=1
+    break
+done
+unset _c
+
+if [ -n "$SYSTEM_CA_BUNDLE" ] && [ "$BEHIND_ZSCALER" = 1 ]; then
+    export NODE_EXTRA_CA_CERTS="$SYSTEM_CA_BUNDLE"
+    export PIP_CERT="$SYSTEM_CA_BUNDLE"
+    export REQUESTS_CA_BUNDLE="$SYSTEM_CA_BUNDLE"
+    export CURL_CA_BUNDLE="$SYSTEM_CA_BUNDLE"
+    export GIT_SSL_CAINFO="$SYSTEM_CA_BUNDLE"
+fi

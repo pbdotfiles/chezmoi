@@ -34,4 +34,6 @@ sudo cp /mnt/c/Users/my_user_name/Documents/certificats/2026_01_certificats_that
 sudo update-ca-certificates
 ```
 
-```
+## OpenSUSE workstations
+The corporate root CA is already installed system-wide by the admin; chezmoi picks it up at runtime (see cm/.chezmoitemplates/tls_env). 
+

@@ -4,7 +4,9 @@
 
 set -euo pipefail
 
-# Install Starship on all machines for a nice looking terminal
+{{ include ".chezmoitemplates/tls_env" }}
+
+# Install Starship to ~/.local/bin (no root required).
 if ! command -v starship &>/dev/null; then
-  curl -sS https://starship.rs/install.sh | sh -s -- -y
+  curl -sS https://starship.rs/install.sh | sh -s -- -y -b "$HOME/.local/bin"
 fi

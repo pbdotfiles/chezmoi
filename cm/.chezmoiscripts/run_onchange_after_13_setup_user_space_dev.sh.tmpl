@@ -1,0 +1,24 @@
+#!/bin/bash
+
+{{ include ".chezmoitemplates/pause_on_error" }}
+
+set -euo pipefail
+
+{{ include ".chezmoitemplates/tls_env" }}
+
+echo "======================================================="
+echo "  zrr network workstations: user-space dev tools"
+echo "======================================================="
+
+declare -A BIN=( [ripgrep]=rg [fd-find]=fd [bat]=bat [btop]=btop [git-delta]=delta [tmux]=tmux )
+for pkg in "${!BIN[@]}"; do
+    if command -v "${BIN[$pkg]}" >/dev/null 2>&1; then
+        echo "✅ ${BIN[$pkg]} already on PATH, skipping."
+    else
+        echo "📦 Installing $pkg via pixi..."
+        pixi global install "$pkg"
+    fi
+done
+
+echo
+echo "🎉 User-space dev tools installed."

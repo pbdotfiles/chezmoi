@@ -9,6 +9,10 @@
 # setup_docker:
 # setup_pixi:
 # =============================================================================
+#
+# OpenSUSE workstations (zrr network): shared /home/paul, hostnames unstable.
+# Gated on is_suse (from .chezmoi.osRelease) rather than hosts_features.
+# =============================================================================
 
 hosts_features:
   rone:
