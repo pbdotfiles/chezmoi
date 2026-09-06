@@ -8,6 +8,13 @@
 [core]
 	autocrlf = input
   excludesfile = ~/.gitignore_global
+  pager = delta
+
+[interactive]
+  diffFilter = delta --color-only
+
+[delta]
+  max-line-length = 10000
 
 [alias]
 	# https://github.com/hilbix/gitstart/blob/master/aliases.sh

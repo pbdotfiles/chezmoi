@@ -4,10 +4,10 @@ gui:
   # Use nerd fonts for better icons
   nerdFontsVersion: "3"
 
-  # Use delta for syntax-highlighting in diff views
+  showFileTree: true
+  sidePanelWidth: 0.3
+
+git:
   paging:
     colorArg: always
     pager: delta --dark --paging=never
-
-  showFileTree: true # Matches the 'nvim-tree' or 'neo-tree' feel
-  sidePanelWidth: 0.3 # Gives more room to the diff preview
