@@ -37,9 +37,6 @@ alias lg=lazygit
 export FZF_DEFAULT_COMMAND='fd --type f --type d --strip-cwd-prefix --hidden --follow --exclude .git'
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 
-_fzf_setup_completion dir z
-complete -F _fzf_complete_z -o nospace -o default -o bashdefault cd
-
 {{- $features := dig .chezmoi.hostname (dict) .hosts_features -}}
 
 {{- if (dig "setup_nvidia" false $features) }}
