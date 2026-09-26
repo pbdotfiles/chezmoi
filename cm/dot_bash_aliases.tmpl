@@ -37,6 +37,15 @@ alias lg=lazygit
 export FZF_DEFAULT_COMMAND='fd --type f --type d --strip-cwd-prefix --hidden --follow --exclude .git'
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 
+# Fuzzy directory completion via fzf.
+# zoxide registers its completion with `-o filenames`, which fzf preserves and
+# which makes bash re-escape the paths fzf already escaped (breaking dirs with
+# spaces). Re-register without `-o filenames`.
+_fzf_setup_completion dir z
+complete -o nospace -o dirnames -F _fzf_dir_completion z
+_fzf_setup_completion dir cd
+complete -o nospace -o dirnames -F _fzf_dir_completion cd
+
 {{- $features := dig .chezmoi.hostname (dict) .hosts_features -}}
 
 {{- if (dig "setup_nvidia" false $features) }}
