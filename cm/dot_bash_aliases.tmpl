@@ -1,6 +1,8 @@
 export PATH="$HOME/.local/bin:$HOME/bin:$HOME/.pixi/bin:$PATH"
 export EDITOR="nvim"
 export VISUAL="nvim"
+# Enable opencode's websearch tool (Exa backend) for non-OpenCode providers.
+export OPENCODE_ENABLE_EXA=1
 
 # TLS proxy detection (see .chezmoitemplates/tls_env).
 {{ include ".chezmoitemplates/tls_env" }}
