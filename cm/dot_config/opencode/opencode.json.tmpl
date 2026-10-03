@@ -1,0 +1,29 @@
+{{- $features := dig .chezmoi.hostname (dict) .hosts_features -}}
+{
+  "$schema": "https://opencode.ai/config.json",
+
+  // One-time manual step on each machine: npx @playwright/mcp install-browser chrome-for-testing
+  "mcp": {
+    "playwright": {
+      "type": "local",
+      "command": [
+        "npx",
+        "@playwright/mcp@latest",
+        "--caps=vision,devtools",
+        "--browser=chromium"
+      ],
+      "enabled": false
+    },
+    "exa": {
+      "type": "remote",
+{{- if (dig "has_bitwarden" false $features) }}
+      "url": "https://mcp.exa.ai/mcp?tools=web_search_exa,web_fetch_exa",
+      "headers": { "x-api-key": "{env:EXA_API_KEY}" }
+{{- else }}
+      // No Bitwarden here: run once `opencode mcp auth exa`
+      "url": "https://mcp.exa.ai/mcp?login"
+{{- end }}
+    }
+  },
+  "plugin": ["@ex-machina/opencode-anthropic-auth"]
+}

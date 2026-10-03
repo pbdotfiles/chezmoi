@@ -1,8 +1,6 @@
 export PATH="$HOME/.local/bin:$HOME/bin:$HOME/.pixi/bin:$PATH"
 export EDITOR="nvim"
 export VISUAL="nvim"
-# Enable opencode's websearch tool (Exa backend) for non-OpenCode providers.
-export OPENCODE_ENABLE_EXA=1
 
 # TLS proxy detection (see .chezmoitemplates/tls_env).
 {{ include ".chezmoitemplates/tls_env" }}
@@ -49,6 +47,10 @@ _fzf_setup_completion dir cd
 complete -o nospace -o dirnames -F _fzf_dir_completion cd
 
 {{- $features := dig .chezmoi.hostname (dict) .hosts_features -}}
+
+{{- if (dig "has_bitwarden" false $features) }}
+export EXA_API_KEY="{{ (index (bitwardenFields "item" "Exa_AI_Search") "Exa API Key").value }}"
+{{- end }}
 
 {{- if (dig "setup_nvidia" false $features) }}
 # Nvidia specific aliases
