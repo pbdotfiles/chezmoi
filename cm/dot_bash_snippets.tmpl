@@ -72,3 +72,70 @@ function lf() {
 	fi
 	rm -f -- "$tmp"
 }
+
+#--- Repomix utilities
+{{- $features := dig .chezmoi.hostname (dict) .hosts_features }}
+# Interactive file selection with yazi, packed to the clipboard.
+# One saved selection per launch folder, under the XDG state dir.
+#   repomix-pick  pick files/folders, save the selection, pack it
+#   repomix-load  repack the saved selection for this folder
+#   repomix-all   pack the whole current folder
+
+# Where the selection for the current folder is stored.
+_repomix_sel() {
+  local dir="${XDG_STATE_HOME:-$HOME/.local/state}/repomix"
+  mkdir -p "$dir" || return 1
+  local key
+  key=$(printf '%s' "$PWD" | sha256sum | cut -c1-16) || return 1
+  printf '%s/%s.selection\n' "$dir" "$key"
+}
+
+# Send stdin to the clipboard.
+_repomix_copy() {
+{{- if (dig "runs_within_wsl" false $features) }}
+  win32yank.exe -i
+{{- else }}
+  xclip -selection clipboard >/dev/null 2>&1
+{{- end }}
+}
+
+# Pack the paths listed in file $1 and copy the result to the clipboard.
+_repomix_pack() {
+  npx -y repomix --stdin --stdout --no-file-summary < "$1" | _repomix_copy
+}
+
+# Pick files and/or folders with yazi, save the selection, then pack it.
+repomix-pick() {
+  local sel tmp
+  sel=$(_repomix_sel) || return 1
+  tmp=$(mktemp) || return 1
+
+  yazi --chooser-file="$tmp"
+
+  if [ -s "$tmp" ]; then
+    sort -u "$tmp" > "$sel"
+    rm -f "$tmp"
+    echo "Saved $(wc -l < "$sel") paths to $sel"
+    _repomix_pack "$sel"
+  else
+    rm -f "$tmp"
+    echo "No selection; keeping the previous one." >&2
+    return 1
+  fi
+}
+
+# Pack the saved selection for this folder without reselecting.
+repomix-load() {
+  local sel
+  sel=$(_repomix_sel) || return 1
+  if [ ! -s "$sel" ]; then
+    echo "No saved selection for $PWD (run repomix-pick)." >&2
+    return 1
+  fi
+  _repomix_pack "$sel"
+}
+
+# Pack the whole current folder.
+repomix-all() {
+  npx -y repomix --stdout --no-file-summary | _repomix_copy
+}
