@@ -1,15 +1,16 @@
-// Reports the state of the sessions open in this TUI to tmux, so the status bar
+// Reports the state of the session displayed in this TUI to tmux, so the status bar
 // can mark each window. Colors and the hook that clears "done" live in ~/.tmux.conf.
 //
 //   pane option   @oc_state  blocked | working | idle
-//   window option @oc_done   1 when a run finished while nobody was viewing the window
+//   window option @oc_done   1 when the displayed session finished while nobody was viewing the window
 //
+// Only the displayed session counts. Background tabs are not tracked: with tabs.scope "cwd",
+// every TUI started in the same folder shares one tab list, so tabs say nothing about a window.
 // Does nothing outside tmux.
 import { Plugin } from "@opencode/plugin/tui"
 import { execFile, execFileSync } from "node:child_process"
 
 type State = "blocked" | "working" | "idle"
-type Root = { id: string; busy: boolean; attention: boolean }
 
 export default Plugin.define({
   id: "paul.tmux-status",
@@ -19,7 +20,7 @@ export default Plugin.define({
 
     const running = new Set<string>() // executing session IDs, roots or subagents
     const pending = new Map<string, string>() // permission or form ID -> session ID
-    const wasBusy = new Map<string, boolean>() // root session ID -> busy at last check
+    let last: { id: string; busy: boolean } | undefined // displayed root at last check
     let written: State | undefined
     let queue: Promise<unknown> = Promise.resolve()
     let debounce: ReturnType<typeof setTimeout> | undefined
@@ -31,60 +32,59 @@ export default Plugin.define({
     const enqueue = (task: () => Promise<unknown>) => {
       queue = queue.then(task).catch(() => {})
     }
-
-    const root = (sessionID: string) => {
+    const safe = <T>(read: () => T, fallback: T): T => {
       try {
-        return ctx.data.session.root(sessionID)
+        return read() ?? fallback
       } catch {
-        return sessionID
+        return fallback
       }
     }
 
-    // Root sessions shown by this TUI: its tabs, or the current session when tabs are off.
-    const openRoots = (): Root[] => {
-      try {
-        if (ctx.ui.tabs.enabled()) {
-          const tabs = ctx.ui.tabs.list()
-          if (tabs.length > 0) return tabs.map((t) => ({ id: t.sessionID, busy: t.busy, attention: t.attention }))
-        }
-        const route = ctx.ui.router.current()
-        if (route.type === "session") return [{ id: root(route.sessionID), busy: false, attention: false }]
-      } catch {}
-      return []
+    // Root of the session on screen, so a subagent view counts as its parent session.
+    const displayed = (): string | undefined => {
+      const route = safe(() => ctx.ui.router.current(), undefined)
+      if (route?.type !== "session") return undefined
+      return safe(() => ctx.data.session.root(route.sessionID), route.sessionID)
     }
 
     const check = () => {
-      const roots = openRoots()
-      const runningRoots = new Set([...running].map(root))
-      const pendingRoots = new Set([...pending.values()].map(root))
-      let blocked = false
-      let working = false
-      let finished = false
-
-      for (const r of roots) {
-        const isBlocked = r.attention || pendingRoots.has(r.id)
-        const isBusy = r.busy || runningRoots.has(r.id)
-        if (isBlocked) blocked = true
-        else if (isBusy) working = true
-        if (wasBusy.get(r.id) && !isBusy && !isBlocked) finished = true
-        wasBusy.set(r.id, isBusy || isBlocked)
+      const id = displayed()
+      if (!id) {
+        last = undefined
+        return write("idle")
       }
-      const open = new Set(roots.map((r) => r.id))
-      for (const id of wasBusy.keys()) if (!open.has(id)) wasBusy.delete(id)
 
-      if (finished) {
+      const family = new Set([id, ...safe(() => ctx.data.session.family(id), [] as string[])])
+      const tab = safe(() => ctx.ui.tabs.list(), []).find((t) => t.sessionID === id)
+      const members = [...family]
+
+      const isBlocked =
+        tab?.attention === true ||
+        [...pending.values()].some((sessionID) => family.has(sessionID)) ||
+        members.some((m) => safe(() => ctx.data.session.permission.list(m)?.length ?? 0, 0) > 0) ||
+        members.some((m) => safe(() => ctx.data.session.form.list(m)?.length ?? 0, 0) > 0)
+      const isBusy =
+        tab?.busy === true ||
+        members.some((m) => running.has(m)) ||
+        members.some((m) => safe(() => ctx.data.session.status(m), "idle") === "running")
+
+      // "Done" only when the same session goes from busy to settled, not when switching sessions.
+      if (last?.id === id && last.busy && !isBusy && !isBlocked) {
         enqueue(async () => {
           // Only mark "done" when no client is currently viewing this window.
           if ((await tmux("display", "-p", "-t", pane, "#{window_active_clients}")) === "0")
             await tmux("set", "-w", "-t", pane, "@oc_done", "1")
         })
       }
+      last = { id, busy: isBusy || isBlocked }
 
-      const state: State = blocked ? "blocked" : working ? "working" : "idle"
-      if (state !== written) {
-        written = state
-        enqueue(() => tmux("set", "-p", "-t", pane, "@oc_state", state))
-      }
+      write(isBlocked ? "blocked" : isBusy ? "working" : "idle")
+    }
+
+    const write = (state: State) => {
+      if (state === written) return
+      written = state
+      enqueue(() => tmux("set", "-p", "-t", pane, "@oc_state", state))
     }
 
     const schedule = () => {
@@ -122,7 +122,7 @@ export default Plugin.define({
       schedule()
     })
 
-    // Also catches tab opens, closes and switches, which do not arrive as server events.
+    // Also catches switching to another session, which does not arrive as a server event.
     const timer = setInterval(check, 2000)
     check()
 
