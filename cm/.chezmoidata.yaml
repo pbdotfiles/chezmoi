@@ -8,6 +8,7 @@
 # setup_smb_share:    Mounts the specific 'chopin' Samba share
 # setup_docker:
 # setup_pixi:
+# setup_claude_keepalive: Installs Claude Code + timer pinging Claude Pro at fixed times
 # =============================================================================
 #
 # OpenSUSE workstations (zrr network): shared /home/paul, hostnames unstable.
@@ -82,6 +83,7 @@ hosts_features:
     setup_borgbackups: true
     setup_btrfs_scrub: true
     setup_chopin_specific: true
+    setup_claude_keepalive: true
 
   vmubuntuserver:
     setup_gui: false

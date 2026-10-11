@@ -1,0 +1,99 @@
+#!/bin/bash
+
+{{ include ".chezmoitemplates/pause_on_error" }}
+
+set -euo pipefail
+
+{{ include ".chezmoitemplates/sudo_keepalive" }}
+sudo_keepalive
+
+echo "🤖 Configuring Claude Pro keepalive (scheduled 5h window pings)..."
+
+# Long-lived OAuth token generated with `claude setup-token`, stored in Bitwarden.
+# Rotating it in Bitwarden changes this script's hash, so the next apply re-runs it.
+CLAUDE_TOKEN="{{ (bitwardenFields "item" "claude-code-oauth-token").token.value }}"
+USERNAME="{{ .chezmoi.username }}"
+
+# 1. Install Claude Code (native installer, user space, no sudo)
+if [ ! -x "$HOME/.local/bin/claude" ]; then
+    echo "   -> Installing Claude Code..."
+    curl -fsSL https://claude.ai/install.sh | bash
+else
+    echo "   -> Claude Code already installed, skipping."
+fi
+
+# 2. Store the token in a root-only env file (read by systemd before dropping to $USERNAME)
+echo "   -> Writing /etc/claude-keepalive.env..."
+printf 'CLAUDE_CODE_OAUTH_TOKEN=%s\n' "$CLAUDE_TOKEN" | sudo install -m 600 -o root -g root /dev/stdin /etc/claude-keepalive.env
+
+# 3. Create the ping script
+echo "   -> Creating ping script at /usr/local/bin/claude-keepalive..."
+cat << 'EOF' | sudo tee /usr/local/bin/claude-keepalive > /dev/null
+#!/bin/bash
+# Start a Claude Pro 5h usage window with a minimal Haiku prompt.
+set -euo pipefail
+
+CLAUDE_BIN="$HOME/.local/bin/claude"
+
+# Reinstall Claude Code if it disappeared since the last chezmoi apply
+if [ ! -x "$CLAUDE_BIN" ]; then
+    echo "Claude Code not found at $CLAUDE_BIN, installing..."
+    curl -fsSL https://claude.ai/install.sh | bash
+fi
+
+if [ -z "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]; then
+    echo "CLAUDE_CODE_OAUTH_TOKEN is not set (check /etc/claude-keepalive.env)" >&2
+    exit 1
+fi
+
+# Force subscription auth, never API billing
+unset ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN
+
+timeout 120 "$CLAUDE_BIN" -p "ping" --model haiku --max-turns 1 --no-session-persistence
+EOF
+
+sudo chmod +x /usr/local/bin/claude-keepalive
+
+# 4. Create the systemd service
+echo "   -> Creating systemd service..."
+cat << EOF | sudo tee /etc/systemd/system/claude-keepalive.service > /dev/null
+[Unit]
+Description=Ping Claude to start a 5h usage window
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=$USERNAME
+EnvironmentFile=/etc/claude-keepalive.env
+WorkingDirectory=/tmp
+ExecStart=/usr/local/bin/claude-keepalive
+EOF
+
+# 5. Create the systemd timer
+# Chain anchored on an evening switch at 22:15: windows end at ~07:12, 12:13,
+# 17:14 and 22:15. Minutes are staggered so a ping never lands while the
+# previous window is still open. 22:15 -> 02:12 is left uncovered (night).
+echo "   -> Creating systemd timer..."
+cat << 'EOF' | sudo tee /etc/systemd/system/claude-keepalive.timer > /dev/null
+[Unit]
+Description=Start Claude 5h usage windows at fixed times
+
+[Timer]
+OnCalendar=*-*-* 02:12:00
+OnCalendar=*-*-* 07:13:00
+OnCalendar=*-*-* 12:14:00
+OnCalendar=*-*-* 17:15:00
+AccuracySec=1s
+Persistent=false
+
+[Install]
+WantedBy=timers.target
+EOF
+
+# 6. Enable and start the timer
+echo "   -> Reloading systemd and enabling timer..."
+sudo systemctl daemon-reload
+sudo systemctl enable --now claude-keepalive.timer
+
+echo "✅ Claude keepalive scheduled via systemd."

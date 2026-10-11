@@ -125,6 +125,11 @@
 **/*setup_chopin_health_check*
 {{- end }}
 
+# If this machine does NOT need the Claude Pro keepalive pings
+{{- if not (dig "setup_claude_keepalive" false $features) }}
+**/*setup_claude_keepalive*
+{{- end }}
+
 
 # OpenSUSE workstations: no root, no apt, no local storage mounts.
 {{- if $is_suse }}
