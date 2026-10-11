@@ -73,6 +73,26 @@ function lf() {
 	rm -f -- "$tmp"
 }
 
+#--- Copy to clipboard
+# Pipes stdin to your local computer's clipboard over SSH/Tmux (OSC 52).
+# The local terminal must accept OSC 52 writes (kitty, WezTerm, Windows Terminal).
+xcopy() {
+  if [ -n "$TMUX" ]; then
+    # We are inside tmux.
+    # Let tmux handle the base64 encoding and chunking natively.
+    # The '-w' flag tells tmux to forward the buffer to the outer terminal via OSC 52
+    # (needs tmux >= 3.2 and 'set-clipboard on').
+    tmux load-buffer -w -
+  else
+    # We are outside tmux (raw SSH).
+    # Use the raw OSC 52 escape sequence, written to the terminal even if stdout is redirected.
+    # 'tr' instead of 'base64 -w0' so it also works with BSD/macOS base64.
+    local b64
+    b64=$(base64 | tr -d '\n')
+    printf '\033]52;c;%s\a' "$b64" > /dev/tty
+  fi
+}
+
 #--- Repomix utilities
 {{- $features := dig .chezmoi.hostname (dict) .hosts_features }}
 # Interactive file selection with yazi, packed to the clipboard.
@@ -95,7 +115,12 @@ _repomix_copy() {
 {{- if (dig "runs_within_wsl" false $features) }}
   win32yank.exe -i
 {{- else }}
-  xclip -selection clipboard >/dev/null 2>&1
+  # xclip needs a local X display; over SSH or on a headless machine, use OSC 52.
+  if [ -n "${DISPLAY:-}" ] && [ -z "${SSH_CONNECTION:-}" ]; then
+    xclip -selection clipboard >/dev/null 2>&1
+  else
+    xcopy
+  fi
 {{- end }}
 }
 
