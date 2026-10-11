@@ -29,12 +29,12 @@ Git is required. If there is no git repository, tell the user.
 
 4. **Resolve mode.** Default to TWO-STEPS (reviewer sketches their own approach before seeing the diff). Use ONE-STEP when the user says `quick`, `fast`, or `single-step`.
 
-5. **Resolve reviewer model.** By default, set no model: the reviewer inherits the main agent's model. If the user named a model, use it verbatim when it is an exact `provider/model` (or `provider/model#variant`) reference; otherwise look up the best match with the `models` tool. Never guess an ID.
+5. **Resolve reviewer models.** By default, set no model: a single reviewer inherits the main agent's model. If the user named one or more models, resolve each one: use it verbatim when it is an exact `provider/model` (or `provider/model#variant`) reference; otherwise look up the best match with the `models` tool. If several models match (e.g., the same model under different providers), prefer the provider the user named; if it is still ambiguous, ask the user. Never guess an ID. Each resolved model gets its own reviewer.
 
-6. **Launch a single subagent call** with the `subagent` tool:
+6. **Launch one subagent call per reviewer** with the `subagent` tool. With several reviewers, issue all calls in the same message so they run in parallel. Every reviewer gets the identical prompt; only `model` differs.
    - `agent` — `review-code`
    - `model` — resolved model from step 5; omit it for the default
-   - `description` — short summary of what's being reviewed
+   - `description` — short summary of what's being reviewed (include the model name when there are several reviewers)
    - `prompt` —
 
    **TWO-STEPS:**
@@ -52,3 +52,10 @@ Git is required. If there is no git repository, tell the user.
    ```
 
 7. **Present findings.** Group by severity. For each finding, state whether you agree (and what to change) or disagree (and why). Be intellectually honest — if the reviewer found a valid issue, concede. Do not defend your code out of pride. Highlight Critical and High first.
+
+   With several reviewers, merge their findings into one list instead of presenting each report separately:
+   - Deduplicate findings that describe the same issue, and tag each finding with the reviewer(s) that raised it (model name).
+   - When reviewers rate the same issue differently, use the highest severity and note the disagreement.
+   - Treat findings raised by several reviewers as higher confidence. Verify single-reviewer findings against the code before endorsing them.
+   - List direct contradictions between reviewers separately, with your assessment of which side is right.
+   - If a reviewer failed or returned nothing usable, say so and continue with the others.
