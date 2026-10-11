@@ -5,5 +5,9 @@
   "attention": {
     "notifications": true,
     "sound": true
+  },
+  // No session tab strip: tmux windows hold the sessions instead.
+  "tabs": {
+    "mode": "off"
   }
 }
