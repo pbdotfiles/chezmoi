@@ -9,5 +9,13 @@
   // No session tab strip: tmux windows hold the sessions instead.
   "tabs": {
     "mode": "off"
+  },
+  // Home/End move within the visible (wrapped) prompt row instead of jumping to the
+  // first/last message. The transcript keeps Ctrl+G / Alt+Home and Ctrl+Alt+G.
+  "keybinds": {
+    "session.first": "ctrl+g,alt+home",
+    "session.last": "ctrl+alt+g",
+    "input.visual.line.home": "alt+a,home",
+    "input.visual.line.end": "alt+e,end"
   }
 }
