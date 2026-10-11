@@ -50,6 +50,7 @@ complete -o nospace -o dirnames -F _fzf_dir_completion cd
 
 {{- if (dig "has_bitwarden" false $features) }}
 export EXA_API_KEY="{{ (index (bitwardenFields "item" "Exa_AI_Search") "Exa API Key").value }}"
+export GOOGLE_TTS_API_KEY="{{ (index (bitwardenFields "item" "Google_TTS_API_KEY") "Google TTS API Key").value }}"
 {{- end }}
 
 {{- if (dig "setup_nvidia" false $features) }}
