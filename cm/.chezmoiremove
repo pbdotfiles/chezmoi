@@ -1,0 +1,12 @@
+# Per-model reviewer agents, replaced by the subagent tool's `model` parameter in OpenCode v2.
+# Delete these lines once `chezmoi apply` has run on every host.
+.config/opencode/agents/review-code-glm.md
+.config/opencode/agents/review-code-deepseek.md
+.config/opencode/agents/review-code-minimax.md
+.config/opencode/agents/review-code-qwen3.7-plus.md
+.config/opencode/agents/review-code-qwen3.7-max.md
+.config/opencode/agents/review-plan-glm.md
+.config/opencode/agents/review-plan-deepseek.md
+.config/opencode/agents/review-plan-minimax.md
+.config/opencode/agents/review-plan-qwen3.7-plus.md
+.config/opencode/agents/review-plan-qwen3.7-max.md
