@@ -8,7 +8,7 @@
 # setup_smb_share:    Mounts the specific 'chopin' Samba share
 # setup_docker:
 # setup_pixi:
-# setup_claude_keepalive: Installs Claude Code + timer pinging Claude Pro at fixed times
+# setup_claude_keepalive: Installs OpenCode (curl) + timer pinging Claude Pro with Haiku 5.5 at fixed times
 # =============================================================================
 #
 # OpenSUSE workstations (zrr network): shared /home/paul, hostnames unstable.

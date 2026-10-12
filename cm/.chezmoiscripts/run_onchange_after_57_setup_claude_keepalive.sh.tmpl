@@ -7,49 +7,43 @@ set -euo pipefail
 {{ include ".chezmoitemplates/sudo_keepalive" }}
 sudo_keepalive
 
-echo "🤖 Configuring Claude Pro keepalive (scheduled 5h window pings)..."
+echo "🤖 Configuring Claude Pro keepalive (scheduled 5h window pings via OpenCode + Haiku 5.5)..."
 
-# Long-lived OAuth token generated with `claude setup-token`, stored in Bitwarden.
-# Rotating it in Bitwarden changes this script's hash, so the next apply re-runs it.
-CLAUDE_TOKEN="{{ (bitwardenFields "item" "claude-code-oauth-token").token.value }}"
 USERNAME="{{ .chezmoi.username }}"
+OPENCODE_BIN="$HOME/.opencode/bin/opencode"
 
-# 1. Install Claude Code (native installer, user space, no sudo)
-if [ ! -x "$HOME/.local/bin/claude" ]; then
-    echo "   -> Installing Claude Code..."
-    curl -fsSL https://claude.ai/install.sh | bash
+# 1. Install OpenCode (official installer, user space, stable path independent of nvm)
+if [ ! -x "$OPENCODE_BIN" ]; then
+    echo "   -> Installing OpenCode..."
+    curl -fsSL https://opencode.ai/v2/install | bash -s -- --no-modify-path
 else
-    echo "   -> Claude Code already installed, skipping."
+    echo "   -> OpenCode already installed, skipping."
 fi
 
-# 2. Store the token in a root-only env file (read by systemd before dropping to $USERNAME)
-echo "   -> Writing /etc/claude-keepalive.env..."
-printf 'CLAUDE_CODE_OAUTH_TOKEN=%s\n' "$CLAUDE_TOKEN" | sudo install -m 600 -o root -g root /dev/stdin /etc/claude-keepalive.env
+# 2. Working directory for the ping sessions (keeps them out of other projects)
+mkdir -p "$HOME/.local/share/claude-keepalive"
 
 # 3. Create the ping script
 echo "   -> Creating ping script at /usr/local/bin/claude-keepalive..."
 cat << 'EOF' | sudo tee /usr/local/bin/claude-keepalive > /dev/null
 #!/bin/bash
-# Start a Claude Pro 5h usage window with a minimal Haiku prompt.
+# Start a Claude Pro 5h usage window with a minimal Haiku prompt through OpenCode.
 set -euo pipefail
 
-CLAUDE_BIN="$HOME/.local/bin/claude"
+OPENCODE_BIN="$HOME/.opencode/bin/opencode"
 
-# Reinstall Claude Code if it disappeared since the last chezmoi apply
-if [ ! -x "$CLAUDE_BIN" ]; then
-    echo "Claude Code not found at $CLAUDE_BIN, installing..."
-    curl -fsSL https://claude.ai/install.sh | bash
+# Reinstall OpenCode if it disappeared since the last chezmoi apply
+if [ ! -x "$OPENCODE_BIN" ]; then
+    echo "OpenCode not found at $OPENCODE_BIN, installing..."
+    curl -fsSL https://opencode.ai/v2/install | bash -s -- --no-modify-path
 fi
 
-if [ -z "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]; then
-    echo "CLAUDE_CODE_OAUTH_TOKEN is not set (check /etc/claude-keepalive.env)" >&2
-    exit 1
-fi
-
-# Force subscription auth, never API billing
+# Force subscription auth (OAuth account), never API billing
 unset ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN
 
-timeout 120 "$CLAUDE_BIN" -p "ping" --model haiku --max-turns 1 --no-session-persistence
+# --standalone: private server that exits with the command, no lingering service
+timeout 120 "$OPENCODE_BIN" run --standalone \
+    -m anthropic/claude-haiku-5-5 "Reply with exactly: pong"
 EOF
 
 sudo chmod +x /usr/local/bin/claude-keepalive
@@ -58,15 +52,14 @@ sudo chmod +x /usr/local/bin/claude-keepalive
 echo "   -> Creating systemd service..."
 cat << EOF | sudo tee /etc/systemd/system/claude-keepalive.service > /dev/null
 [Unit]
-Description=Ping Claude to start a 5h usage window
+Description=Ping Claude (OpenCode + Haiku) to start a 5h usage window
 Wants=network-online.target
 After=network-online.target
 
 [Service]
 Type=oneshot
 User=$USERNAME
-EnvironmentFile=/etc/claude-keepalive.env
-WorkingDirectory=/tmp
+WorkingDirectory=$HOME/.local/share/claude-keepalive
 ExecStart=/usr/local/bin/claude-keepalive
 EOF
 
@@ -95,5 +88,11 @@ EOF
 echo "   -> Reloading systemd and enabling timer..."
 sudo systemctl daemon-reload
 sudo systemctl enable --now claude-keepalive.timer
+
+# 7. The Claude Pro OAuth login is a one-time interactive step (tokens then refresh on their own)
+if ! "$OPENCODE_BIN" auth list --standalone 2>/dev/null | grep -qi '^anthropic'; then
+    echo "⚠️  OpenCode has no Anthropic account yet. Log in once (choose the Claude Pro/Max OAuth method):"
+    echo "      $OPENCODE_BIN auth login anthropic"
+fi
 
 echo "✅ Claude keepalive scheduled via systemd."
