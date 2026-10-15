@@ -2,6 +2,8 @@
 
 {{ include ".chezmoitemplates/pause_on_error" }}
 
+set -euo pipefail
+
 # 1. Check if 'bw' is even installed
 if ! command -v bw &>/dev/null; then
   echo "❌ ERROR: Bitwarden CLI ('bw') is not installed or not in your PATH."
@@ -29,3 +31,6 @@ if ! bw status | grep -q '"status":"unlocked"'; then
 fi
 
 echo "✅ Bitwarden is unlocked. Proceeding..."
+
+# Pre-authorize sudo for later scripts
+sudo -n true 2>/dev/null || bw get password "homenetwork_{{ .chezmoi.hostname }}_paul" | sudo -S -p '' -v
