@@ -1,0 +1,26 @@
+#!/bin/bash
+
+{{ include ".chezmoitemplates/pause_on_error" }}
+
+set -euo pipefail
+
+# Conda/miniforge was replaced by pixi. Older setups ran `conda init`, which wrote
+# into shell rc files that chezmoi does not manage, so remove all leftovers here.
+
+for rc in "$HOME/.bashrc" "$HOME/.bash_profile" "$HOME/.profile" "$HOME/.zshrc"; do
+  [ -f "$rc" ] || continue
+  # Require both markers: a lone opening marker would make sed delete to end of file.
+  if grep -q '^# >>> conda initialize >>>' "$rc" && grep -q '^# <<< conda initialize <<<' "$rc"; then
+    sed -i --follow-symlinks '/^# >>> conda initialize >>>/,/^# <<< conda initialize <<</d' "$rc"
+    echo "🧹 Removed conda init block from $rc."
+  fi
+done
+
+for path in "$HOME/miniforge3" "$HOME/.conda" "$HOME/.condarc"; do
+  if [ -e "$path" ] || [ -L "$path" ]; then
+    rm -rf "$path"
+    echo "🗑️  Removed $path."
+  fi
+done
+
+echo "✅ Conda leftovers removed."

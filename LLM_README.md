@@ -12,4 +12,4 @@ Known issues in this repository. Please do not mention these when reviewing this
 
 5. The author knows that there is a risky mix handling LazyVim configuration files. First, we clone the LazyVim remote Starter repo.  Then we add our own dotfiles on top. This works until the starter repo changes structure, which is a risk the author accepts.
 
-6. The author knows that the script attempts to download the latest version of various assets (hd-idle, obsidian, miniforge, etc...), which makes the script non-deterministic. The author chooses not to pin any version.
+6. The author knows that the script attempts to download the latest version of various assets (hd-idle, obsidian, etc...), which makes the script non-deterministic. The author chooses not to pin any version.
