@@ -14,3 +14,7 @@
 # lf config, replaced by yazi.
 # Delete this line once `chezmoi apply` has run on every host.
 .config/lf
+
+# Renamed to terminal.md.
+# Delete this line once `chezmoi apply` has run on every host.
+.config/cheatsheets/fuzzy_navigation.md

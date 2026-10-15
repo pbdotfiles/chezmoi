@@ -74,6 +74,8 @@ yz() {
     builtin cd -- "$cwd"
   fi
 }
+# Alt-y: clear the line and run yz (Ctrl-Y brings back what was typed).
+[[ $- == *i* ]] && bind '"\ey": "\C-e\C-uyz\C-m"'
 
 #--- Copy to clipboard
 # Pipes stdin to your local computer's clipboard over SSH/Tmux (OSC 52).
