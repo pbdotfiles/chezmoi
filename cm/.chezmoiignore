@@ -130,6 +130,11 @@
 **/*setup_claude_keepalive*
 {{- end }}
 
+# If this machine needs its system timezone set
+{{- if not (dig "setup_timezone" false $features) }}
+**/*setup_timezone*
+{{- end }}
+
 
 # OpenSUSE workstations: no root, no apt, no local storage mounts.
 {{- if $is_suse }}

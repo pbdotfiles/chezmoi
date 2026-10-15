@@ -1,0 +1,39 @@
+#!/bin/bash
+
+{{ include ".chezmoitemplates/pause_on_error" }}
+
+set -euo pipefail
+
+{{ include ".chezmoitemplates/sudo_keepalive" }}
+sudo_keepalive
+
+TZ_NAME="Europe/Paris"
+
+echo "🕒 Setting system timezone to $TZ_NAME..."
+
+# timedatectl only rewrites /etc/localtime. On Debian/Ubuntu the tzdata package
+# keeps its own answer in the debconf database and in /etc/timezone, and it
+# rewrites /etc/localtime from those on upgrade, so update all of them together.
+if command -v dpkg >/dev/null 2>&1 && dpkg -s tzdata >/dev/null 2>&1; then
+  echo "   -> Debian/Ubuntu detected: updating tzdata debconf and /etc/timezone..."
+  TZ_AREA="${TZ_NAME%%/*}"
+  TZ_CITY="${TZ_NAME#*/}"
+  printf 'tzdata tzdata/Areas select %s\ntzdata tzdata/Zones/%s select %s\n' \
+    "$TZ_AREA" "$TZ_AREA" "$TZ_CITY" | sudo debconf-set-selections
+  sudo DEBIAN_FRONTEND=noninteractive dpkg-reconfigure tzdata
+else
+  echo "   -> Setting timezone via timedatectl..."
+  sudo timedatectl set-timezone "$TZ_NAME"
+fi
+
+# systemd re-arms OnCalendar timers when the timezone changes.
+echo "   -> Reloading systemd so calendar timers use the new zone..."
+sudo systemctl daemon-reload
+
+CURRENT_TZ="$(timedatectl show --property=Timezone --value)"
+if [ "$CURRENT_TZ" != "$TZ_NAME" ]; then
+  echo "❌ Timezone is '$CURRENT_TZ' instead of '$TZ_NAME'." >&2
+  exit 1
+fi
+
+echo "✅ System timezone set to $TZ_NAME ($(date '+%Z %z'))."

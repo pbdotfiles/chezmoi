@@ -84,6 +84,7 @@ hosts_features:
     setup_btrfs_scrub: true
     setup_chopin_specific: true
     setup_claude_keepalive: true
+    setup_timezone: true
 
   vmubuntuserver:
     setup_gui: false
