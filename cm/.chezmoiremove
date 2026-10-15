@@ -19,6 +19,10 @@
 # Delete this line once `chezmoi apply` has run on every host.
 .pixi_envs/*/.hook_cache.sh
 
+# Trust list of the retired .pbenv.sh mechanism, replaced by direnv.
+# Delete this line once `chezmoi apply` has run on every host.
+.local/state/pbenv_trusted
+
 # Renamed to terminal.md.
 # Delete this line once `chezmoi apply` has run on every host.
 .config/cheatsheets/fuzzy_navigation.md
