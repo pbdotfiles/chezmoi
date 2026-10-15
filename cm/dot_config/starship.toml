@@ -16,3 +16,10 @@ detect_folders = []
 [pixi]
 # Disable scanning for the pixi.toml file
 detect_files = []
+# Named environments all use pixi's "default" environment: not worth showing.
+show_default_environment = false
+
+# Named environment activated with `pe activate`.
+[env_var.PE_ACTIVE]
+format = "[📦 $env_value]($style) "
+style = "bold green"

@@ -15,6 +15,10 @@
 # Delete this line once `chezmoi apply` has run on every host.
 .config/lf
 
+# Activation hook cache of `pe`, dropped because it froze PATH.
+# Delete this line once `chezmoi apply` has run on every host.
+.pixi_envs/*/.hook_cache.sh
+
 # Renamed to terminal.md.
 # Delete this line once `chezmoi apply` has run on every host.
 .config/cheatsheets/fuzzy_navigation.md
