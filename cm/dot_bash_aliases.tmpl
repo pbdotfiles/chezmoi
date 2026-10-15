@@ -51,6 +51,22 @@ complete -o nospace -o dirnames -F _fzf_dir_completion cd
 {{- if (dig "has_bitwarden" false $features) }}
 export EXA_API_KEY="{{ (index (bitwardenFields "item" "Exa_AI_Search") "Exa API Key").value }}"
 export GOOGLE_TTS_API_KEY="{{ (index (bitwardenFields "item" "Google_TTS_API_KEY") "Google TTS API Key").value }}"
+
+# Unlock Bitwarden in the current shell (log in first if needed)
+bwunlock() {
+  case "$(bw status)" in
+    *'"status":"unlocked"'*)        return 0 ;;
+    *'"status":"unauthenticated"'*) BW_SESSION=$(bw login --raw) ;;
+    *)                              BW_SESSION=$(bw unlock --raw) ;;
+  esac && export BW_SESSION
+}
+
+# Unlock Bitwarden if needed, then apply chezmoi
+cma() { bwunlock && chezmoi apply --force "$@"; }
+{{- else }}
+
+# Apply chezmoi (no Bitwarden on this machine)
+cma() { chezmoi apply --force "$@"; }
 {{- end }}
 
 {{- if (dig "setup_nvidia" false $features) }}
