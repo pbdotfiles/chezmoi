@@ -60,17 +60,19 @@ _tm_completion() {
 }
 complete -F _tm_completion tm
 
-#--- lf utility
-# Press 'q' to exit and stay in the same directory.
-# Press 'Shift-q' to exit and remain in the original directory.
-function lf() {
-	local tmp="$(mktemp -t "lf-cwd.XXXXXX")"
-	export LF_CWD_FILE="$tmp"
-	command lf "$@"
-	if cwd="$(command cat -- "$tmp")" && [ -n "$cwd" ] && [ "$cwd" != "$PWD" ]; then
-		builtin cd -- "$cwd"
-	fi
-	rm -f -- "$tmp"
+#--- Yazi utility
+# Run yazi with yz, then:
+# q: quit and cd to the folder yazi was in.
+# Q: quit and stay in the current folder.
+yz() {
+  local tmp cwd
+  tmp=$(mktemp -t yazi-cwd.XXXXXX) || return
+  yazi "$@" --cwd-file="$tmp"
+  IFS= read -r -d '' cwd < "$tmp"
+  rm -f -- "$tmp"
+  if [ -n "$cwd" ] && [ "$cwd" != "$PWD" ] && [ -d "$cwd" ]; then
+    builtin cd -- "$cwd"
+  fi
 }
 
 #--- Copy to clipboard

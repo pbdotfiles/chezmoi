@@ -1,3 +1,7 @@
+-- Requires WezTerm nightly. The stable release (20240203) ships the old ConPTY,
+-- which delays terminal replies so they reach apps as keypresses (e.g. yazi
+-- opens fzf on startup). Get nightly via the "Windows" link in the latest
+-- stable release notes: https://github.com/wezterm/wezterm/releases
 local wezterm = require("wezterm")
 local config = wezterm.config_builder()
 

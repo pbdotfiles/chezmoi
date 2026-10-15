@@ -10,3 +10,7 @@
 .config/opencode/agents/review-plan-minimax.md
 .config/opencode/agents/review-plan-qwen3.7-plus.md
 .config/opencode/agents/review-plan-qwen3.7-max.md
+
+# lf config, replaced by yazi.
+# Delete this line once `chezmoi apply` has run on every host.
+.config/lf
