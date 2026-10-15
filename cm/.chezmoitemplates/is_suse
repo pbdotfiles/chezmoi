@@ -1,1 +1,2 @@
-{{- if or (contains "suse" (lower .chezmoi.osRelease.id)) (contains "suse" (lower .chezmoi.osRelease.idLike)) }}true{{ else }}false{{ end -}}
+{{- $os := .chezmoi.osRelease | default dict -}}
+{{- if or (contains "suse" (lower (dig "id" "" $os))) (contains "suse" (lower (dig "idLike" "" $os))) }}true{{ else }}false{{ end -}}

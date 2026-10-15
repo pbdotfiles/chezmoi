@@ -4,7 +4,7 @@ export VISUAL="nvim"
 
 # TLS proxy detection (see .chezmoitemplates/tls_env).
 {{ include ".chezmoitemplates/tls_env" }}
-{{- $is_suse := eq (include ".chezmoitemplates/is_suse" | trim) "true" -}}
+{{- $is_suse := eq (includeTemplate "is_suse" . | trim) "true" -}}
 
 # Auto-attach tmux (disabled on OpenSUSE remote hosts — tmux nesting risk).
 {{- if not $is_suse }}

@@ -5,7 +5,7 @@
 set -euo pipefail
 
 {{ include ".chezmoitemplates/tls_env" }}
-{{- $is_suse := eq (include ".chezmoitemplates/is_suse" | trim) "true" -}}
+{{- $is_suse := eq (includeTemplate "is_suse" . | trim) "true" -}}
 
 # Skip sudo_keepalive on OpenSUSE — no root access on these hosts.
 {{- if $is_suse }}

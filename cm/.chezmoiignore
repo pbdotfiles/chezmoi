@@ -2,7 +2,7 @@
 # LOAD HOST-SPECIFIC FEATURES
 # -----------------------------------------------------------------------------
 {{- $features := dig .chezmoi.hostname (dict) .hosts_features -}}
-{{- $is_suse := eq (include ".chezmoitemplates/is_suse" | trim) "true" -}}
+{{- $is_suse := eq (includeTemplate "is_suse" . | trim) "true" -}}
 
 # Managed ~/.bashrc: deployed ONLY on OpenSUSE workstations where the distro
 # default ~/.bashrc does not source ~/.bash_aliases.
