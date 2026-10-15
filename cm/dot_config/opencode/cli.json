@@ -17,5 +17,8 @@
     "session.last": "ctrl+alt+g",
     "input.visual.line.home": "alt+a,home",
     "input.visual.line.end": "alt+e,end"
-  }
+  },
+  "session": {
+    "sidebar": "hide"
+  },
 }
