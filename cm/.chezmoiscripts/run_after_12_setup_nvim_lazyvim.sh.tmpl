@@ -109,9 +109,25 @@ set +u # disable strict variable checking for NVM
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
 
 echo "🟢 Installing Node.js LTS..."
-nvm install --lts
-nvm use --lts
+LATEST_LTS=$(nvm version-remote --lts)
+PREV_NODE=$(ls "$NVM_DIR/versions/node" 2>/dev/null | sort -V | tail -n 1)
+if [ -n "$PREV_NODE" ] && [ "$PREV_NODE" != "$LATEST_LTS" ]; then
+    # Carry global npm packages over to the new version
+    nvm install "$LATEST_LTS" --reinstall-packages-from="$PREV_NODE"
+else
+    nvm install "$LATEST_LTS"
+fi
+nvm use "$LATEST_LTS"
 nvm alias default 'lts/*'
+
+# Keep only the current LTS, drop old versions and nvm's download cache
+for v in $(ls "$NVM_DIR/versions/node"); do
+    if [ "$v" != "$LATEST_LTS" ]; then
+        nvm uninstall "$v"
+    fi
+done
+nvm cache clear
+npm cache verify # garbage-collects unneeded data from the npm cache
 
 # Persist CA bundle for npm-driven nvim/mason/Copilot invocations.
 if [ -n "${SYSTEM_CA_BUNDLE:-}" ]; then
