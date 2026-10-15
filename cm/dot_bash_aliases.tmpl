@@ -122,3 +122,8 @@ source ~/.bash_pbenv
 if [ -f ~/.bash_unmanaged ]; then
     . ~/.bash_unmanaged
 fi
+
+# direnv: per-folder environments (.envrc). Hooked last, as it wraps PROMPT_COMMAND.
+if command -v direnv &>/dev/null; then
+    eval "$(direnv hook bash)"
+fi

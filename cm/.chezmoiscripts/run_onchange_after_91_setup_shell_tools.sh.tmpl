@@ -1,0 +1,34 @@
+#!/bin/bash
+
+{{ include ".chezmoitemplates/pause_on_error" }}
+
+set -euo pipefail
+
+{{ include ".chezmoitemplates/tls_env" }}
+
+# Shell integrations hooked in ~/.bash_aliases, installed to ~/.local/bin (no root required).
+mkdir -p "$HOME/.local/bin"
+
+# Starship prompt.
+if ! command -v starship &>/dev/null; then
+  curl -sS https://starship.rs/install.sh | sh -s -- -y -b "$HOME/.local/bin"
+fi
+
+# direnv (per-folder environments). Upstream static binary: distro packages are too old
+# for the settings in ~/.config/direnv/direnv.toml.
+if ! command -v direnv &>/dev/null; then
+  case "$(uname -m)" in
+  x86_64) arch=amd64 ;;
+  aarch64) arch=arm64 ;;
+  armv7l) arch=arm ;;
+  *)
+    echo "❌ No direnv binary for architecture $(uname -m)."
+    exit 1
+    ;;
+  esac
+  tmp="$(mktemp)"
+  curl -fsSL -o "$tmp" "https://github.com/direnv/direnv/releases/latest/download/direnv.linux-$arch"
+  chmod 755 "$tmp"
+  mv "$tmp" "$HOME/.local/bin/direnv"
+  echo "✅ direnv installed to ~/.local/bin/direnv"
+fi

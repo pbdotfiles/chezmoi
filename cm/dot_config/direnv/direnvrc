@@ -1,0 +1,26 @@
+# `use pe <name>` in an .envrc activates the named pixi environment ~/.pixi_envs/<name>
+# with pe (see ~/.bash_pixi_env_manager). An environment activated with pe before
+# entering the folder is removed first, and comes back when leaving.
+# A choice made with `pe activate` / `pe deactivate` inside the folder is recorded in
+# PE_OVERRIDES ("<folder>=<name or none>" lines, per shell) and wins over <name>.
+use_pe() {
+  source "$HOME/.bash_pixi_env_manager"
+  local env="$1" entry
+  while IFS= read -r entry; do
+    if [ -n "$entry" ] && [ "${entry%=*}" = "$PWD" ]; then
+      env="${entry##*=}"
+    fi
+  done <<<"${PE_OVERRIDES:-}"
+
+  # Tells pe that this folder's environment is managed here.
+  export PE_DIRENV_DIR="$PWD" PE_DIRENV_DEFAULT="$1"
+
+  if [ "$env" = none ]; then
+    if [ -n "${PE_ACTIVE:-}" ]; then
+      _pe_deactivate >/dev/null
+    fi
+  else
+    watch_file "$PE_ENVS_DIR/$env/pixi.lock"
+    _pe_activate "$env"
+  fi
+}

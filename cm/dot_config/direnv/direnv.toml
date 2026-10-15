@@ -1,0 +1,4 @@
+[global]
+# Stay quiet when loading/unloading; only show errors (e.g. a blocked .envrc) and pe's own errors.
+hide_env_diff = true
+log_filter = "(?i)error|blocked|warn|❌"

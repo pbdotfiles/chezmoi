@@ -3,6 +3,9 @@
 # Install packages with `pe add <name> <pkg>`, or `pixi add --manifest-path
 # "$PIXI_PROJECT_MANIFEST" <pkg>` once active. Plain `pixi add` is not enough: in a folder
 # with its own pixi.toml (or pyproject.toml), pixi targets that project instead.
+# In a folder whose .envrc uses `use pe <name>` (see ~/.config/direnv/direnvrc),
+# direnv owns the environment: pe records the choice for that folder in the current
+# shell and lets direnv apply it, so leaving the folder undoes it cleanly.
 # Usage: pe <command> [args]
 
 PE_ENVS_DIR="$HOME/.pixi_envs"
@@ -63,6 +66,35 @@ _pe_deactivate() {
   echo "💤 Environment deactivated."
 }
 
+_pe_in_direnv() {
+  [ -n "${PE_DIRENV_DIR:-}" ] && command -v direnv >/dev/null
+}
+
+# Re-evaluate .envrc now, in this shell only: direnv reloads when its watch list is gone.
+# DIRENV_WATCHES is an undocumented direnv internal (works with direnv 2.38). If switching
+# inside a direnv folder stops applying after a direnv upgrade, look here first.
+# (`direnv reload` is not a substitute: it touches .envrc, affecting every shell, and only
+# once per second because watch times have 1-second precision.)
+_pe_direnv_reload() {
+  unset DIRENV_WATCHES
+  eval "$(direnv export bash)"
+}
+
+# Record which environment ($1, or "none") this shell uses in the current direnv folder.
+_pe_direnv_switch() {
+  local _pe_entry _pe_new=""
+  while IFS= read -r _pe_entry; do
+    if [ -n "$_pe_entry" ] && [ "${_pe_entry%=*}" != "$PE_DIRENV_DIR" ]; then
+      _pe_new+="$_pe_entry"$'\n'
+    fi
+  done <<<"${PE_OVERRIDES:-}"
+  if [ "$1" != "$PE_DIRENV_DEFAULT" ]; then
+    _pe_new+="$PE_DIRENV_DIR=$1"$'\n'
+  fi
+  if [ -n "$_pe_new" ]; then export PE_OVERRIDES="$_pe_new"; else unset PE_OVERRIDES; fi
+  _pe_direnv_reload
+}
+
 pe() {
   local cmd="${1:-}"
   case "$cmd" in
@@ -100,10 +132,22 @@ pe() {
       echo "Usage: pe activate <env_name>"
       return 1
     fi
-    _pe_activate "$2"
+    if _pe_in_direnv; then
+      _pe_check_name "$2" && _pe_direnv_switch "$2"
+    else
+      _pe_activate "$2"
+    fi
     ;;
   deactivate)
-    _pe_deactivate
+    if [ -z "${PE_ACTIVE:-}" ]; then
+      echo "❌ No active environment to deactivate." >&2
+      return 1
+    fi
+    if _pe_in_direnv; then
+      _pe_direnv_switch none && echo "💤 Environment deactivated."
+    else
+      _pe_deactivate
+    fi
     ;;
   add | remove)
     if [ -z "${2:-}" ] || [ -z "${3:-}" ]; then
@@ -114,7 +158,7 @@ pe() {
     pixi "$cmd" --manifest-path "$PE_ENVS_DIR/$2" "${@:3}" || return 1
     # Re-run the hook so activation variables of new packages apply right away.
     if [ "${PE_ACTIVE:-}" = "$2" ]; then
-      _pe_activate "$2"
+      if _pe_in_direnv; then _pe_direnv_reload; else _pe_activate "$2"; fi
     fi
     ;;
   *)
