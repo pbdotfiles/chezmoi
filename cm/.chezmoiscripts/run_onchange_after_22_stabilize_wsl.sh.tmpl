@@ -58,6 +58,9 @@ EOF
     # it sends a signal that tmux interprets as SIGKILL and exits)
     sudo loginctl enable-linger paul
 
+    # 6. Audio through WSLg's PulseAudio (Chrome/kaleido, OpenCode sounds)
+    sudo apt install -y libasound2t64 libpulse0 libasound2-plugins
+
 else
     echo "Skipping WSL stability fixes (not a WSL environment)."
 fi
