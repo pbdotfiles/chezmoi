@@ -1,0 +1,683 @@
+#!/usr/bin/env bash
+# ocbox: OpenCode with the agent's tools confined to chosen folders (bubblewrap).
+#
+# The OpenCode server, which runs the agent's tools (shell, edits, MCP, plugins), runs
+# inside a bwrap sandbox that only sees the folders you allow. The TUI runs outside and
+# connects to it, so tmux, nvim and TUI plugins work as usual. Sessions with the same
+# rights share one server, which stops when its last TUI exits. History is shared with
+# vanilla `opencode`.
+#
+# Rights come from the folder's .envrc (helpers in ~/.config/direnv/direnvrc) and options.
+# The project folder (the .envrc folder, else the git repository, else the current
+# folder) is read-write unless listed read-only. The pixi environment of `use pe` (or
+# `pe activate`) is read-only. Hidden paths inside shared folders appear empty.
+#
+# Protects against honest mistakes, not against a malicious agent: see the cheat sheet
+# (~/.config/cheatsheets/ocbox.md) for what stays visible.
+
+set -euo pipefail
+
+CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
+STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
+CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
+STATE="$STATE_HOME/ocbox"
+OCB_CACHE="$CACHE_HOME/ocbox/opencode"
+OC_CONFIG="$CONFIG_HOME/opencode"
+OC_DATA="$DATA_HOME/opencode"
+OC_STATE="$STATE_HOME/opencode"
+OC_CACHE="$CACHE_HOME/opencode"
+DEFAULT_ENV_FILE="$CONFIG_HOME/ocbox/env"
+PE_ENVS_DIR="$HOME/.pixi_envs"
+SELF="$(realpath "${BASH_SOURCE[0]}")"
+
+# Variables always passed to the sandbox when set: locale, CA bundles, proxies, XDG.
+BASE_ENV=(LANG LANGUAGE LC_ALL LC_CTYPE LC_MESSAGES LC_NUMERIC LC_TIME LC_COLLATE TZ
+  NODE_EXTRA_CA_CERTS PIP_CERT REQUESTS_CA_BUNDLE CURL_CA_BUNDLE GIT_SSL_CAINFO
+  SSL_CERT_FILE SSL_CERT_DIR http_proxy https_proxy no_proxy all_proxy
+  HTTP_PROXY HTTPS_PROXY NO_PROXY ALL_PROXY
+  XDG_CONFIG_HOME XDG_DATA_HOME XDG_STATE_HOME XDG_CACHE_HOME)
+
+# Read-only in every sandbox when present: tools and git settings, no secrets.
+TOOL_PATHS=(.opencode .local/bin bin .pixi .nvm .fzf .gitconfig .gitignore_global
+  .config/git/config .config/git/ignore)
+
+# Files that run outside the sandbox later, kept read-only inside read-write folders.
+AUTORUN_FILES=(.envrc .nvim.lua .nvimrc .exrc .lazy.lua)
+# Folders not scanned for them (large, and not where they live).
+SCAN_SKIP=(node_modules .pixi .venv venv __pycache__)
+
+die() { echo "ocbox: $*" >&2; exit 1; }
+warn() { echo "ocbox: $*" >&2; }
+
+usage() {
+  cat <<'EOF'
+Usage:
+  ocbox [options] [opencode TUI options]   Start or join a sandboxed session here
+  ocbox shell [options]                    Bash in the same sandbox, to look around
+  ocbox show [options]                     Print the rights for this folder
+  ocbox ls                                 List running sandboxed servers
+  ocbox stop [ID... | --all]               Stop servers (their TUIs disconnect)
+
+Options (before any opencode option):
+  -w DIR    Add a read-write folder
+  -r DIR    Add a read-only folder
+  -x PATH   Hide a folder or file inside a shared folder
+  -e NAME   Use pixi environment ~/.pixi_envs/NAME ("none": no environment)
+  -E VAR    Pass environment variable VAR (an API key, for instance)
+
+In .envrc: ocbox_rw DIR..., ocbox_ro DIR..., ocbox_hide PATH..., ocbox_env VAR...,
+use pe NAME. Variables listed in ~/.config/ocbox/env are always passed when set.
+Other arguments go to the TUI, for example: ocbox -c, ocbox -s <session-id>.
+EOF
+}
+
+# --- Rights ----------------------------------------------------------------------------
+
+ROOT="" ROOT_GUESSED=0 ENVRC="" PIXI_ENV="" PIXI_RW=0 OPENCODE_BIN=""
+RW=() RO=() HIDE=() PASS_ENV=() TUI_ARGS=()
+OPT_RW=() OPT_RO=() OPT_HIDE=() OPT_ENV=() OPT_PIXI=""
+
+parse_options() {
+  while [ $# -gt 0 ]; do
+    case "$1" in
+    -w) [ $# -ge 2 ] || die "-w needs a folder"; OPT_RW+=("$2"); shift 2 ;;
+    -r) [ $# -ge 2 ] || die "-r needs a folder"; OPT_RO+=("$2"); shift 2 ;;
+    -x) [ $# -ge 2 ] || die "-x needs a path"; OPT_HIDE+=("$2"); shift 2 ;;
+    -e) [ $# -ge 2 ] || die "-e needs an environment name"; OPT_PIXI="$2"; shift 2 ;;
+    -E) [ $# -ge 2 ] || die "-E needs a variable name"; OPT_ENV+=("$2"); shift 2 ;;
+    -h | --help) usage; exit 0 ;;
+    --) shift; TUI_ARGS=("$@"); return ;;
+    *) TUI_ARGS=("$@"); return ;;
+    esac
+  done
+}
+
+split_colon() { # split_colon ARRAY_NAME STRING
+  local -n _out="$1"
+  local IFS=: part
+  for part in $2; do [ -n "$part" ] && _out+=("$part"); done
+  return 0
+}
+
+contains() { # contains NEEDLE ITEM...
+  local n="$1" x; shift
+  for x in "$@"; do [ "$x" = "$n" ] && return 0; done
+  return 1
+}
+
+path_in() { # path_in PATH DIR...: is PATH one of the DIRs or inside one?
+  local p="$1" d; shift
+  for d in "$@"; do
+    [ "$p" = "$d" ] || [[ "$p" == "$d"/* ]] && return 0
+  done
+  return 1
+}
+
+home_or_above() { [ "$1" = "$HOME" ] || [ "$1" = / ] || [[ "$HOME" == "$1"/* ]]; }
+
+# Refuse folders that would expose the home folder as a whole, or ocbox's own state.
+check_folder() {
+  home_or_above "$1" && die "refusing to share $1: list project folders instead"
+  path_in "$STATE" "$1" && die "refusing to share $1: it contains ocbox's state"
+  return 0
+}
+
+find_opencode() {
+  local oc
+  oc="$(command -v opencode 2>/dev/null)" || return 1
+  OPENCODE_BIN="$(realpath "$oc")"
+}
+
+resolve_rights() {
+  local env_rw="" env_ro="" env_hide="" env_vars="" pe_active="${PE_ACTIVE:-}" out dir real d
+  local -a fields=()
+
+  if command -v direnv >/dev/null 2>&1; then
+    # Loads this folder's .envrc from scratch, as a new shell entering it would. A blocked
+    # (new or modified) .envrc makes direnv fail, which stops ocbox.
+    out="$(OCBOX_RESOLVING=1 direnv exec "$PWD" bash -c \
+      'printf "%s\x1f" "${DIRENV_DIR-}" "${OCBOX_RW-}" "${OCBOX_RO-}" "${OCBOX_ENV-}" "${PE_ACTIVE-}" "${OCBOX_HIDE-}"')" ||
+      die "direnv could not load the .envrc for this folder (see above)"
+    IFS=$'\x1f' read -r -d '' -a fields <<<"$out" || true
+    ENVRC="${fields[0]#-}"
+    env_rw="${fields[1]}" env_ro="${fields[2]}" env_vars="${fields[3]}" pe_active="${fields[4]}"
+    env_hide="${fields[5]:-}"
+  else
+    env_rw="${OCBOX_RW:-}" env_ro="${OCBOX_RO:-}" env_vars="${OCBOX_ENV:-}" env_hide="${OCBOX_HIDE:-}"
+  fi
+
+  # The project: the .envrc folder (unless ~ or above), else the git repository, else
+  # the current folder (then confirmed before use, see confirm_root).
+  if [ -n "$ENVRC" ] && ! home_or_above "$(realpath -e -- "$ENVRC")"; then
+    ROOT="$(realpath -e -- "$ENVRC")"
+  else
+    ROOT="$(git -C "$PWD" rev-parse --show-toplevel 2>/dev/null || true)"
+    if [ -z "$ROOT" ] || home_or_above "$ROOT"; then
+      ROOT="$(pwd -P)"
+      ROOT_GUESSED=1
+    fi
+  fi
+
+  local -a rw=() ro=()
+  split_colon rw "$env_rw"
+  split_colon ro "$env_ro"
+  rw+=("${OPT_RW[@]}")
+  ro+=("${OPT_RO[@]}")
+
+  for dir in "${ro[@]}"; do
+    real="$(realpath -e -- "$dir")" || die "read-only folder not found: $dir"
+    check_folder "$real"
+    contains "$real" "${RO[@]}" || RO+=("$real")
+  done
+  # Read-only wins when a folder is listed both ways.
+  for dir in "${rw[@]}"; do
+    real="$(realpath -e -- "$dir")" || die "read-write folder not found: $dir"
+    check_folder "$real"
+    contains "$real" "${RO[@]}" "${RW[@]}" || RW+=("$real")
+  done
+  # Listed explicitly: no confirmation needed.
+  contains "$ROOT" "${RO[@]}" "${RW[@]}" && ROOT_GUESSED=0
+  check_folder "$ROOT"
+  contains "$ROOT" "${RO[@]}" "${RW[@]}" || RW+=("$ROOT")
+
+  local -a hide=()
+  split_colon hide "$env_hide"
+  hide+=("${OPT_HIDE[@]}")
+  for dir in "${hide[@]}"; do
+    if ! real="$(realpath -e -- "$dir" 2>/dev/null)"; then
+      warn "nothing to hide at $dir (does not exist)"
+      continue
+    fi
+    path_in "$real" "${RW[@]}" "${RO[@]}" ||
+      die "cannot hide $real: not inside a shared folder (already invisible)"
+    for d in "${RW[@]}" "${RO[@]}"; do
+      [ "$d" = "$real" ] && die "cannot hide $real: it is also listed as a shared folder"
+      [[ "$d" == "$real"/* ]] && die "cannot hide $real: it contains shared folder $d"
+    done
+    contains "$real" "${HIDE[@]}" || HIDE+=("$real")
+  done
+
+  PIXI_ENV="${OPT_PIXI:-$pe_active}"
+  [ "$PIXI_ENV" = none ] && PIXI_ENV=""
+  if [ -n "$PIXI_ENV" ]; then
+    [[ "$PIXI_ENV" =~ ^[A-Za-z0-9._-]+$ ]] && [ -f "$PE_ENVS_DIR/$PIXI_ENV/pixi.toml" ] ||
+      die "pixi environment '$PIXI_ENV' does not exist"
+    contains "$PE_ENVS_DIR/$PIXI_ENV" "${RW[@]}" && PIXI_RW=1
+  fi
+
+  # Default variables (~/.config/ocbox/env) only when set; requested ones always.
+  local v line
+  if [ -f "$DEFAULT_ENV_FILE" ]; then
+    while IFS= read -r line || [ -n "$line" ]; do
+      line="${line%%#*}"
+      for v in $line; do
+        [[ "$v" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || die "invalid variable name in $DEFAULT_ENV_FILE: $v"
+        [ -n "${!v+x}" ] && ! contains "$v" "${PASS_ENV[@]}" && PASS_ENV+=("$v")
+      done
+    done <"$DEFAULT_ENV_FILE"
+  fi
+  for v in $env_vars "${OPT_ENV[@]}"; do
+    [[ "$v" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || die "invalid variable name: $v"
+    contains "$v" "${PASS_ENV[@]}" || PASS_ENV+=("$v")
+  done
+}
+
+# Human-readable rights; also the identity of a server, with the passed values hashed.
+rights_text() {
+  local d v
+  for d in "${RW[@]}"; do echo "rw   $d"; done
+  for d in "${RO[@]}"; do echo "ro   $d"; done
+  for d in "${HIDE[@]}"; do echo "hide $d"; done
+  if [ -n "$PIXI_ENV" ]; then
+    if [ "$PIXI_RW" = 1 ]; then echo "pixi $PIXI_ENV (read-write)"; else echo "pixi $PIXI_ENV"; fi
+  fi
+  for v in "${PASS_ENV[@]}"; do
+    if [ -n "${!v+x}" ]; then echo "env  $v"; else echo "env  $v (not set)"; fi
+  done
+}
+
+# Same rights and same opencode build: same server.
+box_id() {
+  local v
+  {
+    rights_text | sort
+    for v in "${PASS_ENV[@]}"; do printf '%s=%s\0' "$v" "${!v-}"; done
+    [ -n "$OPENCODE_BIN" ] && stat -c '%n %s %Y' "$OPENCODE_BIN"
+  } | sha256sum | cut -c1-12
+}
+
+check_cwd() {
+  path_in "$(pwd -P)" "${RW[@]}" "${RO[@]}" || die "the current folder is not one of the shared folders"
+  if path_in "$(pwd -P)" "${HIDE[@]}"; then die "the current folder is hidden"; fi
+}
+
+# Without .envrc or git repository, the current folder is shared read-write only if
+# confirmed (or listed with -w), so that `ocbox` typed in ~/Downloads does not expose it.
+confirm_root() {
+  [ "$ROOT_GUESSED" = 1 ] || return 0
+  [ -t 0 ] || die "no .envrc or git repository: share $ROOT explicitly with -w $ROOT"
+  local answer
+  read -r -p "ocbox: no .envrc or git repository here. Share $ROOT read-write with the agent? [y/N] " answer
+  [[ "$answer" =~ ^[yY] ]] || die "cancelled"
+}
+
+# --- Sandbox -----------------------------------------------------------------------------
+
+base_path() {
+  local p="$HOME/.local/bin:$HOME/bin:$HOME/.pixi/bin:$HOME/.opencode/bin" node_bin
+  # Same choice as the shell (~/.bash_aliases): the newest node installed with nvm.
+  node_bin="$(ls -d "$HOME/.nvm/versions/node/"*/bin 2>/dev/null | sort -V | tail -n 1)"
+  [ -n "$node_bin" ] && p+=":$node_bin"
+  echo "$p:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+}
+
+# Writes the environment file sourced inside the sandbox. $1: file, $2: password or "".
+write_env() {
+  local file="$1" password="$2" v
+  (
+    umask 077
+    for v in "${BASE_ENV[@]}" "${PASS_ENV[@]}"; do
+      [ -n "${!v+x}" ] && printf 'export %s=%q\n' "$v" "${!v}"
+    done
+    [ -n "$password" ] && printf 'export OPENCODE_PASSWORD=%q\n' "$password"
+    true
+  ) >"$file"
+}
+
+# The pixi activation script, computed outside the sandbox (where pixi may install or
+# update the environment) from a clean environment, so PATH is the sandbox's.
+write_pixi_hook() {
+  local file="$1" v
+  local -a env_args=(HOME="$HOME" PATH="$(base_path)")
+  for v in "${BASE_ENV[@]}"; do [ -n "${!v+x}" ] && env_args+=("$v=${!v}"); done
+  env -i "${env_args[@]}" "$HOME/.pixi/bin/pixi" shell-hook \
+    --manifest-path "$PE_ENVS_DIR/$PIXI_ENV" --change-ps1 false >"$file" ||
+    die "pixi could not activate '$PIXI_ENV'"
+}
+
+# Keeps a git directory's hooks and config read-only. A missing hooks folder is created
+# (as `git init` would), so that the agent cannot create one with hooks in it.
+protect_gitdir() {
+  local g="$1"
+  [ -d "$g/hooks" ] || path_in "$g" "${RO[@]}" || mkdir -p "$g/hooks" 2>/dev/null || true
+  [ -e "$g/hooks" ] && ARGS+=(--ro-bind "$g/hooks" "$g/hooks")
+  [ -e "$g/config" ] && ARGS+=(--ro-bind "$g/config" "$g/config")
+  return 0
+}
+
+# Inside a read-write folder, keeps read-only what runs outside the sandbox later: git
+# hooks and config (also of submodules), .envrc and nvim's per-folder config. Best effort:
+# 4 levels deep, existing files only.
+protect_autorun() {
+  local base="$1" entry g
+  local -a skip=() names=()
+  for g in "${SCAN_SKIP[@]}"; do skip+=(-o -name "$g"); done
+  for g in "${AUTORUN_FILES[@]}"; do names+=(-o -name "$g"); done
+  while IFS= read -r -d '' entry; do
+    if [ "${entry##*/}" = .git ] && [ -d "$entry" ]; then
+      protect_gitdir "$entry"
+      [ -d "$entry/modules" ] || continue
+      while IFS= read -r -d '' g; do protect_gitdir "$g"; done < <(
+        find "$entry/modules" \( -name objects -o -name refs -o -name logs \) -prune -o \
+          -type f -name HEAD -printf '%h\0' 2>/dev/null)
+    else
+      ARGS+=(--ro-bind "$entry" "$entry") # file, or .git file of a worktree or submodule
+    fi
+  done < <(find "$base" -maxdepth 4 \( -false "${skip[@]}" \) -prune -o -name .git -prune -print0 \
+    -o -type f \( -false "${names[@]}" \) -print0 2>/dev/null)
+}
+
+# Fills the global array ARGS with bwrap arguments. $1: serve | shell, $2: box state dir.
+build_args() {
+  local mode="$1" dir="$2" p access
+  ARGS=(--unshare-all --share-net --hostname ocbox)
+  # The server must outlive the ocbox that started it; a shell must not.
+  [ "$mode" = shell ] && ARGS+=(--die-with-parent)
+
+  # System, read-only. No /mnt (Windows drives) and an empty /run (WSL interop, Docker
+  # and other sockets).
+  ARGS+=(--ro-bind /usr /usr --ro-bind /etc /etc --proc /proc --dev /dev --ro-bind /sys /sys
+    --tmpfs /tmp --tmpfs /run --dir /var --tmpfs /var/tmp --symlink ../run /var/run)
+  for p in bin sbin lib lib32 lib64; do
+    if [ -L "/$p" ]; then ARGS+=(--symlink "$(readlink "/$p")" "/$p")
+    elif [ -d "/$p" ]; then ARGS+=(--ro-bind "/$p" "/$p"); fi
+  done
+  [ -d /opt ] && ARGS+=(--ro-bind /opt /opt)
+  # resolv.conf often links to /run or /mnt/wsl, both hidden.
+  p="$(realpath /etc/resolv.conf 2>/dev/null || true)"
+  [ -n "$p" ] && [ "$p" != /etc/resolv.conf ] && [ -f "$p" ] && ARGS+=(--ro-bind "$p" "$p")
+
+  ARGS+=(--tmpfs /home --dir "$HOME")
+
+  # Tools, opencode's files and the pixi environment first, so that shared folders listed
+  # by the user win over them.
+  for p in "${TOOL_PATHS[@]}"; do
+    [ -e "$HOME/$p" ] && ARGS+=(--ro-bind "$HOME/$p" "$HOME/$p")
+  done
+  p="$(dirname "$OPENCODE_BIN")"
+  [[ "$p" == "$HOME"/* ]] && ARGS+=(--ro-bind "$p" "$p")
+
+  # OpenCode: configuration read-only, history and state shared, its own cache (plugins
+  # installed there run outside the sandbox in vanilla opencode).
+  mkdir -p "$OC_CONFIG" "$OC_DATA" "$OC_STATE" "$OCB_CACHE"
+  ARGS+=(--ro-bind "$OC_CONFIG" "$OC_CONFIG" --bind "$OC_DATA" "$OC_DATA"
+    --bind "$OC_STATE" "$OC_STATE" --bind "$OCB_CACHE" "$OC_CACHE")
+
+  if [ -n "$PIXI_ENV" ]; then
+    p="$PE_ENVS_DIR/$PIXI_ENV"
+    if [ "$PIXI_RW" = 1 ]; then
+      mkdir -p "$CACHE_HOME/rattler"
+      ARGS+=(--bind "$CACHE_HOME/rattler" "$CACHE_HOME/rattler")
+    else
+      ARGS+=(--ro-bind "$p" "$p")
+    fi
+    ARGS+=(--ro-bind "$dir/pixi-hook.sh" /run/ocbox/pixi-hook.sh)
+  fi
+
+  # Shared folders, parents before the folders nested in them.
+  while IFS=' ' read -r _ access p; do
+    if [ "$access" = rw ]; then ARGS+=(--bind "$p" "$p"); else ARGS+=(--ro-bind "$p" "$p"); fi
+  done < <(
+    {
+      for p in "${RW[@]}"; do echo "${#p} rw $p"; done
+      for p in "${RO[@]}"; do echo "${#p} ro $p"; done
+    } | sort -n
+  )
+
+  for p in "${RW[@]}"; do protect_autorun "$p"; done
+
+  ARGS+=(--ro-bind "$SELF" /run/ocbox/ocbox --ro-bind "$dir/env.$mode" /run/ocbox/env)
+
+  # Masks last, so nothing is mounted over them. The shared background service's
+  # address and password (service*.json, service*.lock), as they exist now.
+  for p in "$OC_CONFIG"/service*.json "$OC_CONFIG"/service*.lock \
+    "$OC_STATE"/service*.json "$OC_STATE"/service*.lock; do
+    [ -f "$p" ] && ARGS+=(--ro-bind /dev/null "$p")
+  done
+  # Hidden paths: an empty read-only folder, or /dev/null for a file. Paths inside an
+  # already hidden folder are gone, so skipped.
+  local h nested
+  local -a hidden=()
+  while IFS=' ' read -r _ p; do
+    nested=0
+    for h in "${hidden[@]}"; do [[ "$p" == "$h"/* ]] && nested=1; done
+    [ "$nested" = 1 ] && continue
+    if [ -d "$p" ]; then ARGS+=(--tmpfs "$p" --remount-ro "$p"); else ARGS+=(--ro-bind /dev/null "$p"); fi
+    hidden+=("$p")
+  done < <(for p in "${HIDE[@]}"; do echo "${#p} $p"; done | sort -n)
+
+  ARGS+=(--clearenv --setenv HOME "$HOME" --setenv USER "$USER" --setenv LOGNAME "$USER"
+    --setenv SHELL /bin/bash --setenv PATH "$(base_path)" --setenv OCBOX "$ID"
+    --setenv OCBOX_OPENCODE "$OPENCODE_BIN")
+  if [ "$mode" = shell ]; then
+    ARGS+=(--setenv TERM "${TERM:-xterm-256color}" --chdir "$(pwd -P)")
+    [ -n "${COLORTERM:-}" ] && ARGS+=(--setenv COLORTERM "$COLORTERM")
+  else
+    ARGS+=(--setenv TERM xterm-256color --chdir "$ROOT")
+  fi
+}
+
+# Runs inside the sandbox.
+inside() {
+  set +euo pipefail # activation scripts are not written for strict mode
+  # shellcheck disable=SC1091
+  source /run/ocbox/env
+  if [ -r /run/ocbox/pixi-hook.sh ]; then
+    # shellcheck disable=SC1091
+    source /run/ocbox/pixi-hook.sh
+    unset -f pixi
+  fi
+  case "$1" in
+  serve) exec "$OCBOX_OPENCODE" serve --hostname 127.0.0.1 --port 0 ;;
+  shell)
+    export PS1='\[\e[33m\][ocbox]\[\e[0m\] \w \$ '
+    exec bash --norc -i
+    ;;
+  esac
+}
+
+# --- Servers -----------------------------------------------------------------------------
+
+seed_cache() {
+  [ -d "$OCB_CACHE" ] && return
+  mkdir -p "$OCB_CACHE"
+  # Plugins as installed by vanilla opencode, so the first start needs no download.
+  local p
+  for p in packages models.json; do
+    [ -e "$OC_CACHE/$p" ] && cp -a "$OC_CACHE/$p" "$OCB_CACHE/"
+  done
+  true
+}
+
+server_pid() { # prints the pid of the box's running bwrap, fails if not running
+  local dir="$1" pid
+  pid="$(cat "$dir/pid" 2>/dev/null)" || return 1
+  [ -n "$pid" ] && [ "$(cat "/proc/$pid/comm" 2>/dev/null)" = bwrap ] || return 1
+  echo "$pid"
+}
+
+server_answers() { # server_answers DIR [TRIES]
+  local dir="$1" tries="${2:-1}" i
+  for ((i = 1; i <= tries; i++)); do
+    curl -fsS -m 5 -o /dev/null -u "opencode:$(cat "$dir/password" 2>/dev/null)" \
+      "$(cat "$dir/url" 2>/dev/null)/api/info" 2>/dev/null && return 0
+    [ "$i" -lt "$tries" ] && sleep 2
+  done
+  return 1
+}
+
+start_server() {
+  local dir="$1" password pid url i
+  rm -f "$dir/pid" "$dir/url"
+  password="$(head -c 32 /dev/urandom | base64 | tr -dc 'A-Za-z0-9')"
+  (umask 077; printf '%s' "$password" >"$dir/password")
+  write_env "$dir/env.serve" "$password"
+  [ -n "$PIXI_ENV" ] && write_pixi_hook "$dir/pixi-hook.sh"
+  rights_text >"$dir/rights"
+  echo "$ROOT" >"$dir/root"
+  seed_cache
+
+  build_args serve "$dir"
+  # Closing fds 8 and 9 matters: a server holding a lock would block later ocbox runs.
+  setsid bwrap "${ARGS[@]}" /bin/bash /run/ocbox/ocbox __inside serve \
+    </dev/null >"$dir/server.log" 2>&1 8>&- 9>&- &
+  pid=$!
+  echo "$pid" >"$dir/pid"
+
+  for i in $(seq 1 120); do
+    url="$(grep -o 'listening on http://[^ ]*' "$dir/server.log" 2>/dev/null | head -n 1 | cut -d' ' -f3)" || true
+    [ -n "$url" ] && break
+    if ! kill -0 "$pid" 2>/dev/null; then
+      tail -n 20 "$dir/server.log" >&2
+      die "the sandboxed server exited (log: $dir/server.log)"
+    fi
+    sleep 0.5
+  done
+  [ -n "$url" ] || die "the sandboxed server did not start in 60 s (log: $dir/server.log)"
+  echo "$url" >"$dir/url"
+  server_answers "$dir" 3 || die "the sandboxed server does not answer (log: $dir/server.log)"
+}
+
+stop_server() {
+  local dir="$1" pid i
+  if pid="$(server_pid "$dir")"; then
+    kill -TERM -- "-$pid" 2>/dev/null || true
+    for i in $(seq 1 20); do kill -0 "$pid" 2>/dev/null || break; sleep 0.25; done
+    kill -KILL -- "-$pid" 2>/dev/null || true
+  fi
+  rm -f "$dir/pid" "$dir/url" "$dir/password" "$dir/env.serve"
+  rm -rf "$dir/clients.d"
+}
+
+# One lock per server: starting a server (pixi may install the environment for minutes)
+# never blocks the TUIs of other servers.
+lock_box() { mkdir -p "$1"; chmod 700 "$STATE"; exec 8>"$1/lock"; flock 8; }
+unlock_box() { exec 8>&-; }
+
+# Removes the state of servers stopped for more than 7 days.
+prune_stale() {
+  local dir
+  [ -d "$STATE" ] || return 0
+  while IFS= read -r -d '' dir; do
+    (
+      flock -n 7 || exit 0
+      server_pid "$dir" >/dev/null || rm -rf "$dir"
+    ) 7>"$dir/lock" 2>/dev/null || true
+  done < <(find "$STATE" -mindepth 1 -maxdepth 1 -type d -mtime +7 -print0 2>/dev/null)
+}
+
+# Two servers on one project do not see each other's live updates and may collide on
+# undo snapshots: warn when another one runs for this project.
+warn_other_servers() {
+  local dir
+  for dir in "$STATE"/*/; do
+    dir="${dir%/}"
+    [ "${dir##*/}" = "$ID" ] && continue
+    [ "$(cat "$dir/root" 2>/dev/null)" = "$ROOT" ] || continue
+    server_pid "$dir" >/dev/null || continue
+    warn "sandbox ${dir##*/} still runs for this project with other rights (ocbox ls)"
+  done
+  return 0
+}
+
+# --- Commands ----------------------------------------------------------------------------
+
+check_ready() {
+  [ -z "${OCBOX:-}" ] || die "already inside an ocbox sandbox"
+  command -v bwrap >/dev/null || die "bubblewrap is not installed (sudo apt install bubblewrap)"
+  find_opencode || die "opencode not found"
+  local err
+  if ! err="$(bwrap --unshare-all --share-net --ro-bind / / true 2>&1)"; then
+    die "bubblewrap cannot create a sandbox on this machine: $err
+  (unprivileged user namespaces disabled, or blocked by AppArmor)"
+  fi
+}
+
+cmd_run() {
+  check_ready
+  resolve_rights
+  check_cwd
+  ID="$(box_id)"
+  BOX="$STATE/$ID"
+  prune_stale
+
+  lock_box "$BOX"
+  if server_pid "$BOX" >/dev/null && [ -s "$BOX/url" ]; then
+    # A busy server can answer slowly: never kill it, it may have other TUIs.
+    server_answers "$BOX" 4 ||
+      die "sandbox $ID runs but does not answer (log: $BOX/server.log). Stop it with: ocbox stop $ID"
+  else
+    stop_server "$BOX"
+    confirm_root
+    warn_other_servers
+    echo "ocbox: starting sandbox $ID"
+    rights_text | sed 's/^/  /'
+    start_server "$BOX"
+  fi
+  # Each TUI holds a shared lock; the last one to leave stops the server.
+  mkdir -p "$BOX/clients.d"
+  exec 9>>"$BOX/clients"
+  flock -s 9
+  echo $$ >"$BOX/clients.d/$$"
+  trap leave EXIT
+  trap 'exit 129' HUP
+  trap 'exit 143' TERM
+  unlock_box
+
+  local status=0
+  OPENCODE_PASSWORD="$(cat "$BOX/password")" "$OPENCODE_BIN" --server "$(cat "$BOX/url")" \
+    "${TUI_ARGS[@]}" 9>&- || status=$?
+  exit "$status"
+}
+
+leave() {
+  trap - EXIT HUP TERM
+  lock_box "$BOX"
+  exec 9>&-
+  rm -f "$BOX/clients.d/$$"
+  if flock -n -x "$BOX/clients" true; then stop_server "$BOX"; fi
+  unlock_box
+}
+
+cmd_shell() {
+  check_ready
+  resolve_rights
+  check_cwd
+  confirm_root
+  ID="$(box_id)"
+  BOX="$STATE/$ID"
+  mkdir -p "$BOX"
+  chmod 700 "$STATE"
+  write_env "$BOX/env.shell" ""
+  [ -n "$PIXI_ENV" ] && write_pixi_hook "$BOX/pixi-hook.sh"
+  seed_cache
+  build_args shell "$BOX"
+  echo "ocbox: shell in sandbox $ID (exit to leave)"
+  local status=0
+  bwrap "${ARGS[@]}" /bin/bash /run/ocbox/ocbox __inside shell || status=$?
+  rm -f "$BOX/env.shell" # may hold passed secrets
+  exit "$status"
+}
+
+cmd_show() {
+  [ -z "${OCBOX:-}" ] || die "already inside an ocbox sandbox"
+  find_opencode || true
+  resolve_rights
+  ID="$(box_id)"
+  echo "sandbox $ID"
+  echo "  project  $ROOT"
+  [ -n "$ENVRC" ] && echo "  .envrc   $ENVRC/.envrc"
+  rights_text | sed 's/^/  /'
+  if server_pid "$STATE/$ID" >/dev/null; then echo "  server   running at $(cat "$STATE/$ID/url")"; else echo "  server   not running"; fi
+}
+
+cmd_ls() {
+  local dir found=0 n c
+  prune_stale
+  for dir in "$STATE"/*/; do
+    dir="${dir%/}"
+    server_pid "$dir" >/dev/null 2>&1 || continue
+    found=1
+    n=0
+    for c in "$dir"/clients.d/*; do [ -e "$c" ] && kill -0 "$(basename "$c")" 2>/dev/null && n=$((n + 1)); done
+    echo "${dir##*/}  $(cat "$dir/url" 2>/dev/null)  $n TUI(s)  $(cat "$dir/root" 2>/dev/null)"
+    sed 's/^/    /' "$dir/rights" 2>/dev/null
+  done
+  [ "$found" = 1 ] || echo "No sandboxed server running."
+}
+
+cmd_stop() {
+  [ $# -gt 0 ] || die "usage: ocbox stop ID... | --all"
+  local dir id
+  if [ "$1" = --all ]; then
+    for dir in "$STATE"/*/; do
+      [ -d "$dir" ] || continue
+      lock_box "${dir%/}"
+      stop_server "${dir%/}"
+      unlock_box
+    done
+  else
+    for id in "$@"; do
+      [[ "$id" =~ ^[0-9a-f]+$ ]] && [ -d "$STATE/$id" ] || die "no sandbox $id"
+      lock_box "$STATE/$id"
+      stop_server "$STATE/$id"
+      unlock_box
+    done
+  fi
+}
+
+# ocbox reads the .envrc through direnv: running it from an .envrc would loop forever.
+if [ -n "${DIRENV_IN_ENVRC:-}" ] || [ -n "${OCBOX_RESOLVING:-}" ]; then
+  die "do not run ocbox in an .envrc; use ocbox_rw, ocbox_ro or ocbox_env (with an underscore)"
+fi
+
+case "${1:-}" in
+__inside) inside "$2" ;;
+shell) shift; parse_options "$@"; cmd_shell ;;
+show) shift; parse_options "$@"; cmd_show ;;
+ls) cmd_ls ;;
+stop) shift; cmd_stop "$@" ;;
+help) usage ;;
+*) parse_options "$@"; cmd_run ;;
+esac

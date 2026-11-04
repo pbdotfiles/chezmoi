@@ -1,0 +1,6 @@
+# Environment variables passed to every ocbox sandbox when they are set (names only,
+# separated by spaces or new lines). Per folder, add more with `ocbox_env VAR...` in
+# .envrc, or with `ocbox -E VAR`.
+
+# Web search (opencode.json "websearch"), set on Bitwarden hosts.
+EXA_API_KEY

@@ -24,3 +24,26 @@ use_pe() {
     _pe_activate "$env"
   fi
 }
+
+# Rights of `ocbox` sessions started in this folder (see ~/.local/bin/ocbox):
+#   ocbox_rw <dir...>   read-write folders
+#   ocbox_ro <dir...>   read-only folders
+#   ocbox_hide <path...> folders or files inside shared folders, made inaccessible
+#   ocbox_env <var...>  environment variables passed to the sandbox (API keys, ...)
+# The .envrc folder itself is read-write unless listed with ocbox_ro.
+ocbox_rw() { _ocbox_add OCBOX_RW "$@"; }
+ocbox_ro() { _ocbox_add OCBOX_RO "$@"; }
+ocbox_hide() { _ocbox_add OCBOX_HIDE "$@"; }
+ocbox_env() {
+  OCBOX_ENV="${OCBOX_ENV:+$OCBOX_ENV }$*"
+  export OCBOX_ENV
+}
+_ocbox_add() {
+  local var="$1" dir
+  shift
+  for dir in "$@"; do
+    dir="$(realpath -m -- "$dir")"
+    printf -v "$var" '%s' "${!var:+${!var}:}$dir"
+  done
+  export "${var?}"
+}
