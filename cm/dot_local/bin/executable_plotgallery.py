@@ -12,6 +12,10 @@ PLOT_DIR = Path("/tmp/ipython_plots")
 
 
 class GalleryHandler(SimpleHTTPRequestHandler):
+    # Keep-alive: the browser reuses its connections instead of opening one per request
+    # (every response must then carry a Content-Length).
+    protocol_version = "HTTP/1.1"
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(PLOT_DIR), **kwargs)
 
@@ -24,16 +28,13 @@ class GalleryHandler(SimpleHTTPRequestHandler):
                     except OSError:
                         pass
             self.send_response(200)
+            self.send_header("Content-Length", "0")
             self.end_headers()
         else:
             self.send_error(404)
 
     def do_GET(self):
         if self.path == "/":
-            self.send_response(200)
-            self.send_header("Content-type", "text/html")
-            self.end_headers()
-
             html = """
             <!DOCTYPE html>
             <html>
@@ -528,13 +529,9 @@ class GalleryHandler(SimpleHTTPRequestHandler):
             </body>
             </html>
             """
-            self.wfile.write(html.encode("utf-8"))
+            self.send_body(html.encode("utf-8"), "text/html")
 
         elif self.path == "/api/files":
-            self.send_response(200)
-            self.send_header("Content-type", "application/json")
-            self.end_headers()
-
             all_files = os.listdir(PLOT_DIR)
             pngs = set(f for f in all_files if f.endswith(".png"))
             htmls = set(f for f in all_files if f.endswith(".html"))
@@ -573,11 +570,18 @@ class GalleryHandler(SimpleHTTPRequestHandler):
 
             result.sort(key=lambda item: item["mtime"])
 
-            self.wfile.write(json.dumps(result).encode("utf-8"))
+            self.send_body(json.dumps(result).encode("utf-8"), "application/json")
 
         else:
             self.path = self.path.split("?")[0]
             super().do_GET()
+
+    def send_body(self, body, content_type):
+        self.send_response(200)
+        self.send_header("Content-type", content_type)
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
 
 
 def main():
