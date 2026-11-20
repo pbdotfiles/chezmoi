@@ -136,6 +136,13 @@
 {{- end }}
 
 
+# If this machine does NOT have the Edifier M60 USB speaker
+{{- if not (dig "setup_edifier_m60" false $features) }}
+**/.config/wireplumber
+**/*setup_edifier_m60*
+{{- end }}
+
+
 # OpenSUSE workstations: no root, no apt, no local storage mounts.
 {{- if $is_suse }}
 **/*setup_apt_common*

@@ -9,6 +9,7 @@
 # setup_docker:
 # setup_pixi:
 # setup_claude_keepalive: Installs OpenCode (curl) + timer pinging Claude Pro with Haiku 5.5 at fixed times
+# setup_edifier_m60:  Edifier M60 USB speaker: soft volume, no S/PDIF profile, fixed hw level
 # =============================================================================
 #
 # OpenSUSE workstations (zrr network): shared /home/paul, hostnames unstable.
@@ -39,6 +40,7 @@ hosts_features:
     setup_nfs_share: true
     setup_syncthing: true
     has_bitwarden: true
+    setup_edifier_m60: true
 
   morefine:
     setup_gui: true

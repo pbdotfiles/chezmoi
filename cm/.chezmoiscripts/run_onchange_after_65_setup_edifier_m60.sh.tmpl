@@ -1,0 +1,22 @@
+#!/bin/bash
+
+{{ include ".chezmoitemplates/pause_on_error" }}
+
+set -euo pipefail
+
+{{ include ".chezmoitemplates/sudo_keepalive" }}
+sudo_keepalive
+
+# Hardware volume of the speaker itself (0-48, 1 step = 1 dB, 48 = 0 dB).
+# PipeWire does the volume in software (see ~/.config/wireplumber), this sets the ceiling.
+HW_LEVEL=42
+
+echo "ACTION==\"add\", SUBSYSTEM==\"sound\", KERNEL==\"controlC*\", ATTRS{idVendor}==\"2d99\", ATTRS{idProduct}==\"a094\", RUN+=\"/usr/bin/amixer -c %n -q set PCM ${HW_LEVEL}\"" \
+    | sudo tee /etc/udev/rules.d/91-edifier-m60.rules > /dev/null
+sudo udevadm control --reload
+
+if [ -e /proc/asound/M60 ]; then
+    amixer -c M60 -q set PCM "$HW_LEVEL"
+fi
+
+echo "✅ Edifier M60 setup complete."
